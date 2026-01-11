@@ -1,12 +1,16 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
-import ModalScreen from "@/screens/ModalScreen";
+import RouteDetailScreen from "@/screens/RouteDetailScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type RootStackParamList = {
   Main: undefined;
-  Modal: undefined;
+  RouteDetail: {
+    routeId: string;
+    origin: string;
+    destination: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,11 +26,11 @@ export default function RootStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Modal"
-        component={ModalScreen}
+        name="RouteDetail"
+        component={RouteDetailScreen}
         options={{
           presentation: "modal",
-          headerTitle: "Modal",
+          headerTitle: "Route Details",
         }}
       />
     </Stack.Navigator>

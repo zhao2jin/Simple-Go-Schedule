@@ -62,7 +62,7 @@ export function Button({
       style={[
         styles.button,
         {
-          backgroundColor: theme.link,
+          backgroundColor: theme.primary,
           opacity: disabled ? 0.5 : 1,
         },
         style,
