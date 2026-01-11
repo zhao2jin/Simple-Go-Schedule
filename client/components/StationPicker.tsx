@@ -22,6 +22,7 @@ interface StationPickerProps {
   stations: Station[];
   onSelect: (station: Station) => void;
   placeholder?: string;
+  testID?: string;
 }
 
 export function StationPicker({
@@ -30,6 +31,7 @@ export function StationPicker({
   stations,
   onSelect,
   placeholder = "Select station",
+  testID,
 }: StationPickerProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -65,6 +67,7 @@ export function StationPicker({
         {label}
       </ThemedText>
       <Pressable
+        testID={testID}
         onPress={handleOpen}
         style={[
           styles.selector,
@@ -97,7 +100,7 @@ export function StationPicker({
         >
           <View style={styles.modalHeader}>
             <ThemedText type="h4">{label}</ThemedText>
-            <Pressable onPress={() => setIsOpen(false)}>
+            <Pressable testID={`${testID}-done-button`} onPress={() => setIsOpen(false)}>
               <ThemedText style={{ color: Colors.light.primary }}>Done</ThemedText>
             </Pressable>
           </View>
@@ -113,6 +116,7 @@ export function StationPicker({
           >
             <Feather name="search" size={18} color={theme.textSecondary} />
             <TextInput
+              testID={`${testID}-search-input`}
               style={[styles.searchInput, { color: theme.text }]}
               placeholder="Search stations..."
               placeholderTextColor={theme.textSecondary}
@@ -122,7 +126,7 @@ export function StationPicker({
               autoCorrect={false}
             />
             {searchQuery.length > 0 ? (
-              <Pressable onPress={() => setSearchQuery("")}>
+              <Pressable testID={`${testID}-clear-search`} onPress={() => setSearchQuery("")}>
                 <Feather name="x-circle" size={18} color={theme.textSecondary} />
               </Pressable>
             ) : null}
@@ -134,6 +138,7 @@ export function StationPicker({
             contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}
             renderItem={({ item }) => (
               <Pressable
+                testID={`${testID}-station-${item.code}`}
                 onPress={() => handleSelect(item)}
                 style={({ pressed }) => [
                   styles.stationItem,

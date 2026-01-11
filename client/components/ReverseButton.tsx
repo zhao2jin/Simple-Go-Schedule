@@ -49,6 +49,7 @@ export function ReverseButton({
 
   return (
     <AnimatedPressable
+      testID="button-reverse-direction"
       onPress={handlePress}
       style={[
         styles.button,

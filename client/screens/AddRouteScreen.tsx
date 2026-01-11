@@ -12,8 +12,8 @@ import { Button } from "@/components/Button";
 import { StationPicker } from "@/components/StationPicker";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, Colors } from "@/constants/theme";
-import { saveRoute, getSavedRoutes } from "@/lib/storage";
+import { Spacing } from "@/constants/theme";
+import { saveRoute } from "@/lib/storage";
 import type { Station, SavedRoute } from "@shared/types";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 
@@ -51,22 +51,6 @@ export default function AddRouteScreen() {
     setIsSaving(true);
 
     try {
-      const existingRoutes = await getSavedRoutes();
-      const exists = existingRoutes.some(
-        (r) =>
-          (r.originCode === origin.code && r.destinationCode === destination.code) ||
-          (r.originCode === destination.code && r.destinationCode === origin.code)
-      );
-
-      if (exists) {
-        Alert.alert(
-          "Route Exists",
-          "This route (or its reverse) is already saved."
-        );
-        setIsSaving(false);
-        return;
-      }
-
       const newRoute: SavedRoute = {
         id: `${origin.code}-${destination.code}-${Date.now()}`,
         originCode: origin.code,
@@ -76,14 +60,24 @@ export default function AddRouteScreen() {
         createdAt: Date.now(),
       };
 
-      await saveRoute(newRoute);
+      const saved = await saveRoute(newRoute);
+      
+      if (!saved) {
+        Alert.alert(
+          "Route Exists",
+          "This route (or its reverse) is already saved."
+        );
+        setIsSaving(false);
+        return;
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       setOrigin(undefined);
       setDestination(undefined);
 
       navigation.getParent()?.navigate("MyRoutesTab" as keyof MainTabParamList);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to save route. Please try again.");
     } finally {
       setIsSaving(false);
@@ -120,6 +114,7 @@ export default function AddRouteScreen() {
           stations={stations}
           onSelect={setOrigin}
           placeholder={isLoadingStations ? "Loading stations..." : "Select origin station"}
+          testID="picker-origin-station"
         />
 
         <StationPicker
@@ -128,6 +123,7 @@ export default function AddRouteScreen() {
           stations={stations}
           onSelect={setDestination}
           placeholder={isLoadingStations ? "Loading stations..." : "Select destination station"}
+          testID="picker-destination-station"
         />
       </View>
 

@@ -20,23 +20,41 @@ export async function getSavedRoutes(): Promise<SavedRoute[]> {
   }
 }
 
-export async function saveRoute(route: SavedRoute): Promise<void> {
-  const routes = await getSavedRoutes();
-  const exists = routes.some((r) => r.id === route.id);
-  if (!exists) {
+export async function saveRoute(route: SavedRoute): Promise<boolean> {
+  try {
+    const routes = await getSavedRoutes();
+    const exists = routes.some(
+      (r) =>
+        (r.originCode === route.originCode && r.destinationCode === route.destinationCode) ||
+        (r.originCode === route.destinationCode && r.destinationCode === route.originCode)
+    );
+    if (exists) {
+      return false;
+    }
     routes.push(route);
     await AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
+    return true;
+  } catch {
+    return false;
   }
 }
 
 export async function deleteRoute(routeId: string): Promise<void> {
-  const routes = await getSavedRoutes();
-  const filtered = routes.filter((r) => r.id !== routeId);
-  await AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(filtered));
+  try {
+    const routes = await getSavedRoutes();
+    const filtered = routes.filter((r) => r.id !== routeId);
+    await AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(filtered));
+  } catch {
+    // silently fail
+  }
 }
 
 export async function updateRoutesOrder(routes: SavedRoute[]): Promise<void> {
-  await AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
+  try {
+    await AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
+  } catch {
+    // silently fail
+  }
 }
 
 export async function getPreferences(): Promise<UserPreferences> {
@@ -49,9 +67,13 @@ export async function getPreferences(): Promise<UserPreferences> {
 }
 
 export async function savePreferences(prefs: Partial<UserPreferences>): Promise<void> {
-  const current = await getPreferences();
-  const updated = { ...current, ...prefs };
-  await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+  try {
+    const current = await getPreferences();
+    const updated = { ...current, ...prefs };
+    await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+  } catch {
+    // silently fail
+  }
 }
 
 export async function getReversedMode(): Promise<boolean> {
@@ -64,9 +86,17 @@ export async function getReversedMode(): Promise<boolean> {
 }
 
 export async function setReversedMode(reversed: boolean): Promise<void> {
-  await AsyncStorage.setItem(REVERSED_KEY, reversed ? "true" : "false");
+  try {
+    await AsyncStorage.setItem(REVERSED_KEY, reversed ? "true" : "false");
+  } catch {
+    // silently fail
+  }
 }
 
 export async function clearAllData(): Promise<void> {
-  await AsyncStorage.multiRemove([ROUTES_KEY, PREFERENCES_KEY, REVERSED_KEY]);
+  try {
+    await AsyncStorage.multiRemove([ROUTES_KEY, PREFERENCES_KEY, REVERSED_KEY]);
+  } catch {
+    // silently fail
+  }
 }

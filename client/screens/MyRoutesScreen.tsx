@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -14,7 +14,6 @@ import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 import { getSavedRoutes, getReversedMode, setReversedMode } from "@/lib/storage";
-import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import type { SavedRoute, JourneyResult } from "@shared/types";
@@ -138,7 +137,7 @@ export default function MyRoutesScreen() {
         <ReverseButton
           isReversed={isReversed}
           onToggle={handleToggleReverse}
-          bottomOffset={tabBarHeight + Spacing.xl}
+          bottomOffset={tabBarHeight + Spacing.xl + insets.bottom}
         />
       ) : null}
     </View>
