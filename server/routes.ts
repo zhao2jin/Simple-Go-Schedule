@@ -31,13 +31,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       const data = await fetchMetrolinx("/api/V1/Stop/All", apiKey);
-      const stops = data?.Stops || data?.Stop?.Stops || [];
-      const stations = stops.map((stop: any) => ({
-        code: stop.StopCode || stop.Code,
-        name: stop.StopName || stop.Name,
+      const stops = data?.Stations?.Station || data?.Stops || [];
+      
+      const trainStops = stops.filter((stop: any) => {
+        const locationType = stop.LocationType || "";
+        return locationType.includes("GO") || 
+               locationType.includes("Train") || 
+               locationType.includes("Rail") ||
+               locationType.includes("Station");
+      });
+
+      const allStops = trainStops.length > 0 ? trainStops : stops.slice(0, 200);
+
+      const stations = allStops.map((stop: any) => ({
+        code: stop.LocationCode || stop.StopCode || stop.Code,
+        name: stop.LocationName || stop.StopName || stop.Name,
         locationName: stop.LocationName,
         locationType: stop.LocationType,
+        latitude: stop.Latitude || stop.StopLatitude,
+        longitude: stop.Longitude || stop.StopLongitude,
       }));
+
       res.json({ stations });
     } catch (error: any) {
       console.error("Error fetching stations:", error.message);

@@ -3,6 +3,8 @@ export interface Station {
   name: string;
   locationName?: string;
   locationType?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface SavedRoute {
