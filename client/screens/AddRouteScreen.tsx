@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, Platform, Linking } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -29,7 +29,8 @@ export default function AddRouteScreen() {
   const [origin, setOrigin] = useState<Station | undefined>();
   const [destination, setDestination] = useState<Station | undefined>();
   const [isSaving, setIsSaving] = useState(false);
-  const [locationRequested, setLocationRequested] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const locationRequestedRef = useRef(false);
 
   const [permission, requestPermission] = Location.useForegroundPermissions();
 
@@ -43,53 +44,44 @@ export default function AddRouteScreen() {
   const stations = stationsData?.stations || [];
 
   useEffect(() => {
-    if (locationRequested) return;
+    if (locationRequestedRef.current) return;
     if (permission === null || permission === undefined) return;
 
-    setLocationRequested(true);
+    locationRequestedRef.current = true;
 
     if (permission.granted) {
-      fetchLocationAndSetOrigin();
+      fetchLocation();
     } else if (permission.status !== "denied" || permission.canAskAgain) {
       requestPermission().then((result) => {
         if (result.granted) {
-          fetchLocationAndSetOrigin();
+          fetchLocation();
         }
       });
     }
   }, [permission]);
 
-  const fetchLocationAndSetOrigin = async () => {
+  useEffect(() => {
+    if (userLocation && stations.length > 0 && !origin) {
+      const stationsWithCoords = stations.filter(s => s.latitude && s.longitude);
+      if (stationsWithCoords.length > 0) {
+        const nearest = findNearestStation(userLocation.lat, userLocation.lon, stationsWithCoords);
+        if (nearest) {
+          setOrigin(nearest);
+        }
+      }
+    }
+  }, [userLocation, stations, origin]);
+
+  const fetchLocation = async () => {
     try {
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-
-      const userLat = location.coords.latitude;
-      const userLon = location.coords.longitude;
-
-      if (stations.length > 0) {
-        selectNearestStation(userLat, userLon, stations);
-      } else {
-        const checkStations = setInterval(() => {
-          if (stationsData?.stations && stationsData.stations.length > 0) {
-            selectNearestStation(userLat, userLon, stationsData.stations);
-            clearInterval(checkStations);
-          }
-        }, 500);
-        setTimeout(() => clearInterval(checkStations), 10000);
-      }
+      setUserLocation({
+        lat: location.coords.latitude,
+        lon: location.coords.longitude,
+      });
     } catch {
-    }
-  };
-
-  const selectNearestStation = (lat: number, lon: number, stationList: Station[]) => {
-    const stationsWithCoords = stationList.filter(s => s.latitude && s.longitude);
-    if (stationsWithCoords.length > 0) {
-      const nearest = findNearestStation(lat, lon, stationsWithCoords);
-      if (nearest && !origin) {
-        setOrigin(nearest);
-      }
     }
   };
 
