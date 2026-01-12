@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
@@ -8,6 +8,7 @@ import Animated, {
   FadeInUp,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -80,6 +81,7 @@ export function RouteCard({
 }: RouteCardProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
+  const useGlass = isLiquidGlassAvailable();
 
   const origin = isReversed ? route.destinationName : route.originName;
   const destination = isReversed ? route.originName : route.destinationName;
@@ -103,100 +105,123 @@ export function RouteCard({
 
   const nextThree = departures.slice(0, 3);
 
-  return (
-    <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-      <AnimatedPressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.backgroundDefault,
-            borderColor: theme.border,
-          },
-          animatedStyle,
-        ]}
-      >
-        <View style={styles.routeHeader}>
+  const cardContent = (
+    <>
+      <View style={styles.routeHeader}>
+        <ThemedText
+          type="caption"
+          style={[styles.routeText, { color: theme.textSecondary }]}
+        >
+          {origin}
+        </ThemedText>
+        <Feather
+          name="arrow-right"
+          size={14}
+          color={theme.textSecondary}
+          style={styles.arrowIcon}
+        />
+        <ThemedText
+          type="caption"
+          style={[styles.routeText, { color: theme.textSecondary }]}
+        >
+          {destination}
+        </ThemedText>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <View style={[styles.skeleton, { backgroundColor: theme.backgroundSecondary }]} />
+        </View>
+      ) : nextThree.length > 0 ? (
+        <View style={styles.departuresContainer}>
+          {nextThree.map((dep, i) => {
+            const mins = getMinutesUntil(dep.departureTime);
+            const isDelayed = dep.status === "delayed";
+            return (
+              <View key={i} style={styles.departureItem}>
+                <ThemedText
+                  style={[
+                    styles.departureTime,
+                    { color: isDelayed ? Colors.light.delayed : theme.text },
+                  ]}
+                >
+                  {formatTime(dep.departureTime)}
+                </ThemedText>
+                <ThemedText
+                  type="caption"
+                  style={[
+                    styles.minutesText,
+                    { color: isDelayed ? Colors.light.delayed : Colors.light.primary },
+                  ]}
+                >
+                  {mins > 0 ? `${mins} min` : "Now"}
+                </ThemedText>
+                {isDelayed && dep.delay > 0 ? (
+                  <ThemedText
+                    type="small"
+                    style={[styles.delayText, { color: Colors.light.delayed }]}
+                  >
+                    +{dep.delay}m
+                  </ThemedText>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={styles.noDeparturesContainer}>
           <ThemedText
             type="caption"
-            style={[styles.routeText, { color: theme.textSecondary }]}
+            style={{ color: theme.textSecondary }}
           >
-            {origin}
-          </ThemedText>
-          <Feather
-            name="arrow-right"
-            size={14}
-            color={theme.textSecondary}
-            style={styles.arrowIcon}
-          />
-          <ThemedText
-            type="caption"
-            style={[styles.routeText, { color: theme.textSecondary }]}
-          >
-            {destination}
+            No upcoming departures
           </ThemedText>
         </View>
+      )}
 
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <View style={[styles.skeleton, { backgroundColor: theme.backgroundSecondary }]} />
-          </View>
-        ) : nextThree.length > 0 ? (
-          <View style={styles.departuresContainer}>
-            {nextThree.map((dep, i) => {
-              const mins = getMinutesUntil(dep.departureTime);
-              const isDelayed = dep.status === "delayed";
-              return (
-                <View key={i} style={styles.departureItem}>
-                  <ThemedText
-                    style={[
-                      styles.departureTime,
-                      { color: isDelayed ? Colors.light.delayed : theme.text },
-                    ]}
-                  >
-                    {formatTime(dep.departureTime)}
-                  </ThemedText>
-                  <ThemedText
-                    type="caption"
-                    style={[
-                      styles.minutesText,
-                      { color: isDelayed ? Colors.light.delayed : Colors.light.primary },
-                    ]}
-                  >
-                    {mins > 0 ? `${mins} min` : "Now"}
-                  </ThemedText>
-                  {isDelayed && dep.delay > 0 ? (
-                    <ThemedText
-                      type="small"
-                      style={[styles.delayText, { color: Colors.light.delayed }]}
-                    >
-                      +{dep.delay}m
-                    </ThemedText>
-                  ) : null}
-                </View>
-              );
-            })}
-          </View>
-        ) : (
-          <View style={styles.noDeparturesContainer}>
-            <ThemedText
-              type="caption"
-              style={{ color: theme.textSecondary }}
-            >
-              No upcoming departures
-            </ThemedText>
-          </View>
-        )}
+      {hasAlert ? (
+        <View style={[styles.alertBadge, { backgroundColor: Colors.light.accent }]}>
+          <Feather name="alert-triangle" size={12} color="#000" />
+          <ThemedText style={styles.alertText}>Service Alert</ThemedText>
+        </View>
+      ) : null}
+    </>
+  );
 
-        {hasAlert ? (
-          <View style={[styles.alertBadge, { backgroundColor: Colors.light.accent }]}>
-            <Feather name="alert-triangle" size={12} color="#000" />
-            <ThemedText style={styles.alertText}>Service Alert</ThemedText>
-          </View>
-        ) : null}
-      </AnimatedPressable>
+  return (
+    <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
+      {useGlass && Platform.OS === "ios" ? (
+        <AnimatedPressable
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={animatedStyle}
+        >
+          <GlassView
+            glassEffectStyle="regular"
+            tintColor={Colors.light.primary + "12"}
+            style={[styles.glassCard, { padding: Spacing["2xl"] }]}
+          >
+            {cardContent}
+          </GlassView>
+        </AnimatedPressable>
+      ) : (
+        <AnimatedPressable
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.backgroundDefault,
+              borderColor: theme.border,
+            },
+            animatedStyle,
+          ]}
+        >
+          {cardContent}
+        </AnimatedPressable>
+      )}
     </Animated.View>
   );
 }
@@ -204,8 +229,12 @@ export function RouteCard({
 const styles = StyleSheet.create({
   card: {
     padding: Spacing["2xl"],
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  glassCard: {
+    borderRadius: BorderRadius.lg,
     marginBottom: Spacing.lg,
   },
   routeHeader: {

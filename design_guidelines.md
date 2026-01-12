@@ -113,17 +113,22 @@
 
 ## 6. Visual Design
 
-**Touchable Feedback**: All buttons/cards darken 10% opacity on press
-**Icons**: Use SF Symbols (iOS native) - no emojis
-**Shadows**: Only for floating reverse button:
-  - shadowOffset: {width: 0, height: 2}
-  - shadowOpacity: 0.10
-  - shadowRadius: 2
+**iOS 26 Liquid Glass**: 
+- Uses expo-glass-effect's GlassView for cards, tab bar, and navigation on iOS 26+
+- Frosted glass effect with subtle GO green tint (primary + 12-15% opacity)
+- Falls back to solid backgrounds on unsupported platforms
+- Tab bar uses transparent glass with subtle blur
+- Route cards use glass effect for modern translucent appearance
+
+**Touchable Feedback**: All buttons/cards scale to 0.98 with spring animation on press
+**Icons**: Use Feather icons from @expo/vector-icons - no emojis
+**Shadows**: Replaced by glass effects on iOS 26+; fallback uses 1px borders
 
 **Route Cards**:
-- No shadow, just 1px border in surface color
+- Glass effect with GO green tint on iOS 26+
+- Fallback: solid surface color with 1px border
 - Generous padding (24px)
-- Rounded corners (16px)
+- Rounded corners (24px)
 
 ## 7. Assets to Generate
 

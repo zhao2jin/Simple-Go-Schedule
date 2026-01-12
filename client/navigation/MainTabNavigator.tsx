@@ -2,7 +2,8 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Platform, StyleSheet } from "react-native";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { Platform, StyleSheet, View } from "react-native";
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import AddRouteStackNavigator from "@/navigation/AddRouteStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
@@ -17,8 +18,42 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+const useGlass = isLiquidGlassAvailable();
+
+function GlassTabBackground() {
+  return (
+    <GlassView
+      glassEffectStyle="regular"
+      tintColor={Colors.light.primary + "08"}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+}
+
+function BlurTabBackground() {
+  const { isDark } = useTheme();
+  return (
+    <BlurView
+      intensity={100}
+      tint={isDark ? "dark" : "light"}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+}
+
+function AndroidTabBackground() {
+  const { theme } = useTheme();
+  return (
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.backgroundRoot }]} />
+  );
+}
+
+const TabBarBackground = Platform.OS === "ios" 
+  ? (useGlass ? GlassTabBackground : BlurTabBackground)
+  : AndroidTabBackground;
+
 export default function MainTabNavigator() {
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
 
   return (
     <Tab.Navigator
@@ -28,21 +63,11 @@ export default function MainTabNavigator() {
         tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: Platform.select({
-            ios: "transparent",
-            android: theme.backgroundRoot,
-          }),
+          backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
         },
-        tabBarBackground: () =>
-          Platform.OS === "ios" ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : null,
+        tabBarBackground: TabBarBackground,
         headerShown: false,
       }}
     >

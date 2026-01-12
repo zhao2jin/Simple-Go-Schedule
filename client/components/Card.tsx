@@ -1,15 +1,16 @@
 import React from "react";
-import { StyleSheet, Pressable, ViewStyle } from "react-native";
+import { StyleSheet, Pressable, ViewStyle, Platform } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   WithSpringConfig,
 } from "react-native-reanimated";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 
 interface CardProps {
   elevation?: number;
@@ -58,6 +59,7 @@ export function Card({
   const scale = useSharedValue(1);
 
   const cardBackgroundColor = getBackgroundColorForElevation(elevation, theme);
+  const useGlass = isLiquidGlassAvailable();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -70,6 +72,41 @@ export function Card({
   const handlePressOut = () => {
     scale.value = withSpring(1, springConfig);
   };
+
+  const content = (
+    <>
+      {title ? (
+        <ThemedText type="h4" style={styles.cardTitle}>
+          {title}
+        </ThemedText>
+      ) : null}
+      {description ? (
+        <ThemedText type="small" style={styles.cardDescription}>
+          {description}
+        </ThemedText>
+      ) : null}
+      {children}
+    </>
+  );
+
+  if (useGlass && Platform.OS === "ios") {
+    return (
+      <AnimatedPressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[animatedStyle, style]}
+      >
+        <GlassView
+          glassEffectStyle="regular"
+          tintColor={Colors.light.primary + "15"}
+          style={[styles.glassCard, { padding: Spacing.xl }]}
+        >
+          {content}
+        </GlassView>
+      </AnimatedPressable>
+    );
+  }
 
   return (
     <AnimatedPressable
@@ -85,17 +122,7 @@ export function Card({
         style,
       ]}
     >
-      {title ? (
-        <ThemedText type="h4" style={styles.cardTitle}>
-          {title}
-        </ThemedText>
-      ) : null}
-      {description ? (
-        <ThemedText type="small" style={styles.cardDescription}>
-          {description}
-        </ThemedText>
-      ) : null}
-      {children}
+      {content}
     </AnimatedPressable>
   );
 }
@@ -103,6 +130,9 @@ export function Card({
 const styles = StyleSheet.create({
   card: {
     padding: Spacing.xl,
+    borderRadius: BorderRadius["2xl"],
+  },
+  glassCard: {
     borderRadius: BorderRadius["2xl"],
   },
   cardTitle: {
