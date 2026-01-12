@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, Platform, Linking, Pressable } from "react-native";
+import { View, StyleSheet, Alert, Platform, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -7,16 +7,15 @@ import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
-import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { StationPicker } from "@/components/StationPicker";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Colors } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { saveRoute } from "@/lib/storage";
-import { findNearestStation, haversineDistance, formatDistance } from "@/lib/location";
+import { findNearestStation } from "@/lib/location";
 import type { Station, SavedRoute } from "@shared/types";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 
@@ -30,9 +29,7 @@ export default function AddRouteScreen() {
   const [origin, setOrigin] = useState<Station | undefined>();
   const [destination, setDestination] = useState<Station | undefined>();
   const [isSaving, setIsSaving] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [nearestStation, setNearestStation] = useState<Station | undefined>();
-  const [locationStatus, setLocationStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
+  const [locationRequested, setLocationRequested] = useState(false);
 
   const [permission, requestPermission] = Location.useForegroundPermissions();
 
@@ -46,66 +43,53 @@ export default function AddRouteScreen() {
   const stations = stationsData?.stations || [];
 
   useEffect(() => {
-    if (permission?.granted && !userLocation) {
-      fetchLocation();
-    }
-  }, [permission?.granted]);
+    if (locationRequested) return;
+    if (permission === null || permission === undefined) return;
 
-  useEffect(() => {
-    if (userLocation && stations.length > 0) {
-      const stationsWithCoords = stations.filter(s => s.latitude && s.longitude);
-      if (stationsWithCoords.length > 0) {
-        const nearest = findNearestStation(userLocation.lat, userLocation.lon, stationsWithCoords);
-        setNearestStation(nearest);
-      }
-    }
-  }, [userLocation, stations]);
+    setLocationRequested(true);
 
-  const fetchLocation = async () => {
+    if (permission.granted) {
+      fetchLocationAndSetOrigin();
+    } else if (permission.status !== "denied" || permission.canAskAgain) {
+      requestPermission().then((result) => {
+        if (result.granted) {
+          fetchLocationAndSetOrigin();
+        }
+      });
+    }
+  }, [permission]);
+
+  const fetchLocationAndSetOrigin = async () => {
     try {
-      setLocationStatus("requesting");
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      setUserLocation({
-        lat: location.coords.latitude,
-        lon: location.coords.longitude,
-      });
-      setLocationStatus("granted");
-    } catch {
-      setLocationStatus("denied");
-    }
-  };
 
-  const handleRequestLocation = async () => {
-    if (permission?.granted) {
-      fetchLocation();
-      return;
-    }
+      const userLat = location.coords.latitude;
+      const userLon = location.coords.longitude;
 
-    if (permission?.status === "denied" && !permission.canAskAgain) {
-      if (Platform.OS !== "web") {
-        try {
-          await Linking.openSettings();
-        } catch {
-          Alert.alert("Settings", "Please enable location in your device settings.");
-        }
+      if (stations.length > 0) {
+        selectNearestStation(userLat, userLon, stations);
+      } else {
+        const checkStations = setInterval(() => {
+          if (stationsData?.stations && stationsData.stations.length > 0) {
+            selectNearestStation(userLat, userLon, stationsData.stations);
+            clearInterval(checkStations);
+          }
+        }, 500);
+        setTimeout(() => clearInterval(checkStations), 10000);
       }
-      return;
-    }
-
-    const result = await requestPermission();
-    if (result.granted) {
-      fetchLocation();
-    } else {
-      setLocationStatus("denied");
+    } catch {
     }
   };
 
-  const handleSelectNearestStation = () => {
-    if (nearestStation) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setOrigin(nearestStation);
+  const selectNearestStation = (lat: number, lon: number, stationList: Station[]) => {
+    const stationsWithCoords = stationList.filter(s => s.latitude && s.longitude);
+    if (stationsWithCoords.length > 0) {
+      const nearest = findNearestStation(lat, lon, stationsWithCoords);
+      if (nearest && !origin) {
+        setOrigin(nearest);
+      }
     }
   };
 
@@ -157,9 +141,6 @@ export default function AddRouteScreen() {
   };
 
   const isValid = origin && destination && origin.code !== destination.code;
-  const distanceToNearest = nearestStation && userLocation && nearestStation.latitude && nearestStation.longitude
-    ? haversineDistance(userLocation.lat, userLocation.lon, nearestStation.latitude, nearestStation.longitude)
-    : null;
 
   return (
     <KeyboardAwareScrollViewCompat
@@ -182,78 +163,9 @@ export default function AddRouteScreen() {
         </ThemedText>
       </View>
 
-      {!permission?.granted ? (
-        <Pressable
-          testID="button-enable-location"
-          onPress={handleRequestLocation}
-          style={[
-            styles.locationBanner,
-            {
-              backgroundColor: Colors.light.primary + "15",
-              borderColor: Colors.light.primary + "30",
-            },
-          ]}
-        >
-          <Feather name="map-pin" size={20} color={Colors.light.primary} />
-          <View style={styles.locationBannerText}>
-            <ThemedText type="caption" style={{ fontWeight: "600" }}>
-              Enable location
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Auto-select the nearest station
-            </ThemedText>
-          </View>
-          <Feather name="chevron-right" size={20} color={theme.textSecondary} />
-        </Pressable>
-      ) : locationStatus === "requesting" ? (
-        <View
-          style={[
-            styles.locationBanner,
-            {
-              backgroundColor: theme.backgroundSecondary,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <Feather name="loader" size={20} color={theme.textSecondary} />
-          <View style={styles.locationBannerText}>
-            <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-              Finding your location...
-            </ThemedText>
-          </View>
-        </View>
-      ) : nearestStation && !origin ? (
-        <Pressable
-          testID="button-select-nearest"
-          onPress={handleSelectNearestStation}
-          style={[
-            styles.nearestBanner,
-            {
-              backgroundColor: Colors.light.primary + "15",
-              borderColor: Colors.light.primary + "30",
-            },
-          ]}
-        >
-          <Feather name="navigation" size={20} color={Colors.light.primary} />
-          <View style={styles.locationBannerText}>
-            <ThemedText type="caption" style={{ fontWeight: "600" }}>
-              {nearestStation.name}
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              Nearest station{distanceToNearest ? ` (${formatDistance(distanceToNearest)})` : ""}
-            </ThemedText>
-          </View>
-          <View style={[styles.useBadge, { backgroundColor: Colors.light.primary }]}>
-            <ThemedText type="small" style={{ color: "#fff", fontWeight: "600" }}>
-              Use
-            </ThemedText>
-          </View>
-        </Pressable>
-      ) : null}
-
       <View style={styles.form}>
         <StationPicker
-          label="From (Morning)"
+          label="From"
           value={origin}
           stations={stations}
           onSelect={setOrigin}
@@ -262,7 +174,7 @@ export default function AddRouteScreen() {
         />
 
         <StationPicker
-          label="To (Morning)"
+          label="To"
           value={destination}
           stations={stations}
           onSelect={setDestination}
@@ -276,7 +188,6 @@ export default function AddRouteScreen() {
           onPress={handleSave}
           disabled={!isValid || isSaving}
           style={styles.saveButton}
-          testID="button-save-route"
         >
           {isSaving ? "Saving..." : "Save Route"}
         </Button>
@@ -294,32 +205,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: Spacing.sm,
-  },
-  locationBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    marginBottom: Spacing.xl,
-    gap: Spacing.md,
-  },
-  nearestBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    marginBottom: Spacing.xl,
-    gap: Spacing.md,
-  },
-  locationBannerText: {
-    flex: 1,
-  },
-  useBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
   },
   form: {
     flex: 1,
