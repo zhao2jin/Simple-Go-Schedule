@@ -18,8 +18,6 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const useGlass = isLiquidGlassAvailable();
-
 function GlassTabBackground() {
   return (
     <GlassView
@@ -41,16 +39,31 @@ function BlurTabBackground() {
   );
 }
 
-function AndroidTabBackground() {
+function SolidTabBackground() {
   const { theme } = useTheme();
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.backgroundRoot }]} />
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.backgroundDefault }]} />
   );
 }
 
-const TabBarBackground = Platform.OS === "ios" 
-  ? (useGlass ? GlassTabBackground : BlurTabBackground)
-  : AndroidTabBackground;
+function TabBarBackgroundComponent() {
+  const { isDark } = useTheme();
+  const useGlass = isLiquidGlassAvailable();
+  
+  if (Platform.OS !== "ios") {
+    return <SolidTabBackground />;
+  }
+  
+  if (useGlass && isDark) {
+    return <GlassTabBackground />;
+  }
+  
+  if (isDark) {
+    return <BlurTabBackground />;
+  }
+  
+  return <SolidTabBackground />;
+}
 
 export default function MainTabNavigator() {
   const { theme } = useTheme();
@@ -64,10 +77,11 @@ export default function MainTabNavigator() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: "transparent",
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
           elevation: 0,
         },
-        tabBarBackground: TabBarBackground,
+        tabBarBackground: TabBarBackgroundComponent,
         headerShown: false,
       }}
     >
