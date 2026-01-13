@@ -32,6 +32,16 @@ const LINE_DESTINATIONS: Record<string, string[]> = {
   "ST": ["LI", "ST", "MJ", "MR", "CE", "UI", "MK", "AG", "KE", "UN"],
 };
 
+const TRAIN_LINE_CODES = ["LW", "LE", "ML", "GT", "BA", "RH", "ST", "KI"];
+
+function getVehicleType(lineCode: string, lineName: string): 'train' | 'bus' {
+  if (TRAIN_LINE_CODES.includes(lineCode)) return 'train';
+  if (lineName?.toLowerCase().includes('bus')) return 'bus';
+  if (lineName?.toLowerCase().includes('train')) return 'train';
+  if (lineCode?.startsWith('B') || lineCode?.length > 2) return 'bus';
+  return 'train';
+}
+
 function getLineForRoute(origin: string, destination: string): string | undefined {
   for (const [lineCode, stations] of Object.entries(LINE_DESTINATIONS)) {
     if (stations.includes(origin) && stations.includes(destination)) {
@@ -119,6 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const status = line.DepartureStatus || "";
         const isCancelled = status === "C";
         const isDelayed = delayMinutes > 5 || status === "L";
+        const lineCode = line.LineCode || "";
+        const lineName = line.LineName || "";
         
         return {
           tripNumber: line.TripNumber || "N/A",
@@ -127,7 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platform: line.ScheduledPlatform || line.ActualPlatform || undefined,
           delay: delayMinutes,
           status: isCancelled ? "cancelled" : isDelayed ? "delayed" : "on_time",
-          line: line.LineName || line.LineCode,
+          line: lineName || lineCode,
+          vehicleType: getVehicleType(lineCode, lineName),
         };
       });
 
@@ -180,6 +193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const status = line.DepartureStatus || "";
         const isCancelled = status === "C";
         const isDelayed = delayMinutes > 5 || status === "L";
+        const lineCode = line.LineCode || "";
+        const lineName = line.LineName || "";
         
         return {
           tripNumber: line.TripNumber || "N/A",
@@ -188,7 +203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platform: line.ScheduledPlatform || line.ActualPlatform || undefined,
           delay: delayMinutes,
           status: isCancelled ? "cancelled" : isDelayed ? "delayed" : "on_time",
-          line: line.LineName || line.LineCode,
+          line: lineName || lineCode,
+          vehicleType: getVehicleType(lineCode, lineName),
         };
       });
 

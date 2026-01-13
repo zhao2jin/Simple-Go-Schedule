@@ -1,17 +1,20 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
+import { View, StyleSheet, ScrollView, RefreshControl, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { SwipeableRouteCard } from "@/components/SwipeableRouteCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ReverseButton } from "@/components/ReverseButton";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
+import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing } from "@/constants/theme";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import { getSavedRoutes, getReversedMode, setReversedMode } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
@@ -47,6 +50,7 @@ export default function MyRoutesScreen() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await loadRoutes();
     queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
     setIsRefreshing(false);
@@ -125,16 +129,34 @@ export default function MyRoutesScreen() {
             onAction={navigateToAddRoute}
           />
         ) : (
-          routes.map((route, index) => (
-            <RouteCardWithData
-              key={route.id}
-              route={route}
-              isReversed={isReversed}
-              onPress={() => handleRoutePress(route)}
-              onDelete={handleRouteDelete}
-              index={index}
-            />
-          ))
+          <>
+            <View style={styles.header}>
+              <ThemedText type="h3">My Routes</ThemedText>
+              <Pressable
+                onPress={handleRefresh}
+                style={({ pressed }) => [
+                  styles.refreshButton,
+                  { 
+                    backgroundColor: theme.backgroundDefault,
+                    borderColor: theme.border,
+                    opacity: pressed ? 0.7 : 1 
+                  },
+                ]}
+              >
+                <Feather name="refresh-cw" size={18} color={Colors.light.primary} />
+              </Pressable>
+            </View>
+            {routes.map((route, index) => (
+              <RouteCardWithData
+                key={route.id}
+                route={route}
+                isReversed={isReversed}
+                onPress={() => handleRoutePress(route)}
+                onDelete={handleRouteDelete}
+                index={index}
+              />
+            ))}
+          </>
         )}
       </ScrollView>
 
@@ -198,5 +220,19 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.lg,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

@@ -333,14 +333,21 @@ export function RouteCard({
                   >
                     {mins > 0 ? `${mins} min` : "Now"}
                   </ThemedText>
-                  {dep.line ? (
-                    <ThemedText
-                      type="small"
-                      style={{ color: theme.textSecondary }}
-                    >
-                      {dep.line}
-                    </ThemedText>
-                  ) : null}
+                  <View style={styles.lineRow}>
+                    <Feather 
+                      name={dep.vehicleType === "bus" ? "truck" : "navigation"} 
+                      size={12} 
+                      color={theme.textSecondary} 
+                    />
+                    {dep.line ? (
+                      <ThemedText
+                        type="small"
+                        style={{ color: theme.textSecondary }}
+                      >
+                        {dep.line}
+                      </ThemedText>
+                    ) : null}
+                  </View>
                 </View>
               </View>
             );
@@ -454,6 +461,11 @@ const styles = StyleSheet.create({
   statusSection: {
     alignItems: "flex-end",
     gap: 2,
+  },
+  lineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   departureTime: {
     fontSize: 20,

@@ -24,6 +24,7 @@ export interface Departure {
   delay: number;
   status: 'on_time' | 'delayed' | 'cancelled';
   line?: string;
+  vehicleType?: 'train' | 'bus';
 }
 
 export interface ServiceAlert {
