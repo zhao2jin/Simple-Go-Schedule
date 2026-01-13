@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Image, Pressable, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -61,19 +61,6 @@ export default function ProfileScreen() {
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
-      <View style={styles.profileSection}>
-        <Image
-          source={require("../../assets/images/profile-avatar.png")}
-          style={styles.avatar}
-          resizeMode="cover"
-        />
-        <ThemedText type="h3" style={styles.displayName}>
-          Commuter
-        </ThemedText>
-        <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-          GO Transit Commuter
-        </ThemedText>
-      </View>
 
       <View style={styles.section}>
         <ThemedText
@@ -178,21 +165,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  profileSection: {
-    alignItems: "center",
-    paddingVertical: Spacing["2xl"],
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: Spacing.lg,
-  },
-  displayName: {
-    marginBottom: Spacing.xs,
-  },
   section: {
-    marginTop: Spacing["2xl"],
+    marginTop: Spacing.lg,
   },
   sectionHeader: {
     fontWeight: "600",
