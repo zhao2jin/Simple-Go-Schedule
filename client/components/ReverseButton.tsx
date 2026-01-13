@@ -74,7 +74,7 @@ export function ReverseButton({
           { color: isReversed ? "#fff" : theme.text },
         ]}
       >
-        {isReversed ? "Home" : "Work"}
+        Swap
       </ThemedText>
     </AnimatedPressable>
   );
