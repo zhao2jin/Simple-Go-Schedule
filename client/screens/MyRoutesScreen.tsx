@@ -5,9 +5,9 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { RouteCard } from "@/components/RouteCard";
+import { SwipeableRouteCard } from "@/components/SwipeableRouteCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ReverseButton } from "@/components/ReverseButton";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
@@ -26,6 +26,7 @@ export default function MyRoutesScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
+  const queryClient = useQueryClient();
 
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [isReversed, setIsReversed] = useState(false);
@@ -49,6 +50,7 @@ export default function MyRoutesScreen() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadRoutes();
+    queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
     setIsRefreshing(false);
   };
 
@@ -69,6 +71,10 @@ export default function MyRoutesScreen() {
       origin: `${originName}|${origin}`,
       destination: `${destName}|${destination}`,
     });
+  };
+
+  const handleRouteDelete = () => {
+    loadRoutes();
   };
 
   const navigateToAddRoute = () => {
@@ -127,6 +133,7 @@ export default function MyRoutesScreen() {
               route={route}
               isReversed={isReversed}
               onPress={() => handleRoutePress(route)}
+              onDelete={handleRouteDelete}
               index={index}
             />
           ))
@@ -148,11 +155,13 @@ function RouteCardWithData({
   route,
   isReversed,
   onPress,
+  onDelete,
   index,
 }: {
   route: SavedRoute;
   isReversed: boolean;
   onPress: () => void;
+  onDelete: () => void;
   index: number;
 }) {
   const origin = isReversed ? route.destinationCode : route.originCode;
@@ -165,12 +174,13 @@ function RouteCardWithData({
   });
 
   return (
-    <RouteCard
+    <SwipeableRouteCard
       route={route}
       departures={data?.departures || []}
       isReversed={isReversed}
       hasAlert={data?.alerts && data.alerts.length > 0}
       onPress={onPress}
+      onDelete={onDelete}
       index={index}
       isLoading={isLoading}
     />
