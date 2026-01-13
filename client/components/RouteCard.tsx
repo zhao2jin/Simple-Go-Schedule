@@ -242,8 +242,8 @@ export function RouteCard({
   index,
   isLoading,
 }: RouteCardProps) {
-  const { theme } = useTheme();
-  const useGlass = isLiquidGlassAvailable();
+  const { theme, isDark } = useTheme();
+  const useGlass = isLiquidGlassAvailable() && isDark;
   const [selectedDeparture, setSelectedDeparture] = useState<Departure | null>(null);
 
   const origin = isReversed ? route.destinationName : route.originName;
