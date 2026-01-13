@@ -97,9 +97,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Origin and destination required" });
     }
     try {
+      // Use Eastern Time (Toronto) for API queries
       const now = new Date();
-      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-      const timeStr = now.toTimeString().slice(0, 5).replace(":", "");
+      const torontoFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Toronto",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+      const parts = torontoFormatter.formatToParts(now);
+      const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
+      const year = getPart("year");
+      const month = getPart("month");
+      const day = getPart("day");
+      const hours = getPart("hour");
+      const minutes = getPart("minute");
+      const dateStr = `${year}${month}${day}`;
+      const timeStr = `${hours}${minutes}`;
+      const localDateStr = `${year}-${month}-${day}`;
       
       const journeyEndpoint = `/api/V1/Schedule/Journey/${dateStr}/${origin}/${destination}/${timeStr}/10`;
       const journeyData = await fetchMetrolinx(journeyEndpoint, apiKey);
@@ -123,29 +141,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const stops = trip.Stops?.Stop || [];
             const stopsArray = Array.isArray(stops) ? stops : [stops];
-            const originStop = stopsArray.find((s: any) => s.Code === origin);
-            const destStop = stopsArray.find((s: any) => s.Code === destination);
-            const firstStop = stopsArray[0];
-            const lastStop = stopsArray[stopsArray.length - 1];
+            
+            // Use departFromCode and destinationStopCode from the API
+            const departFromCode = trip.departFromCode || trip.departFromAlternativeCode;
+            const destStopCode = trip.destinationStopCode;
+            
+            const originStop = stopsArray.find((s: any) => 
+              s.Code === origin || s.Code === departFromCode
+            );
+            const destStop = stopsArray.find((s: any) => 
+              s.Code === destination || s.Code === destStopCode
+            );
             
             const lineCode = trip.Line || "";
             const lineName = trip.Display || lineCode;
             const vehicleType = trip.Type === "T" ? "train" : trip.Type === "B" ? "bus" : getVehicleType(lineCode, lineName);
             
-            let departureTime = service.StartTime || "";
-            let arrivalTime = service.EndTime || "";
-            
-            if (originStop?.Time) {
-              departureTime = `${now.toISOString().slice(0, 10)} ${originStop.Time}:00`;
-            } else if (firstStop?.Time) {
-              departureTime = `${now.toISOString().slice(0, 10)} ${firstStop.Time}:00`;
-            }
-            
-            if (destStop?.Time) {
-              arrivalTime = `${now.toISOString().slice(0, 10)} ${destStop.Time}:00`;
-            } else if (lastStop?.Time) {
-              arrivalTime = `${now.toISOString().slice(0, 10)} ${lastStop.Time}:00`;
-            }
+            // Use service.StartTime/EndTime as the source (API provides full datetime)
+            const departureTime = service.StartTime || "";
+            const arrivalTime = service.EndTime || "";
             
             departures.push({
               tripNumber,
