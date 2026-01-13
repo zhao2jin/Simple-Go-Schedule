@@ -1,13 +1,7 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeInUp,
-} from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -24,8 +18,6 @@ interface RouteCardProps {
   index: number;
   isLoading?: boolean;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function formatTime(timeString: string): string {
   if (!timeString) return "--:--";
@@ -101,38 +93,32 @@ function getMinutesUntil(timeString: string): number {
   }
 }
 
+function getStatusLabel(status: string, delay: number): string {
+  if (status === "cancelled") return "Cancelled";
+  if (status === "delayed" && delay > 0) return `Delayed +${delay}m`;
+  if (status === "delayed") return "Delayed";
+  return "On Time";
+}
+
+function getStatusColor(status: string): string {
+  if (status === "cancelled") return Colors.light.delayed;
+  if (status === "delayed") return Colors.light.delayed;
+  return Colors.light.primary;
+}
+
 export function RouteCard({
   route,
   departures,
   isReversed,
   hasAlert,
-  onPress,
   index,
   isLoading,
 }: RouteCardProps) {
   const { theme } = useTheme();
-  const scale = useSharedValue(1);
   const useGlass = isLiquidGlassAvailable();
 
   const origin = isReversed ? route.destinationName : route.originName;
   const destination = isReversed ? route.originName : route.destinationName;
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 15, stiffness: 150 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 150 });
-  };
-
-  const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onPress();
-  };
 
   const nextThree = departures.slice(0, 3);
 
@@ -167,7 +153,8 @@ export function RouteCard({
         <View style={styles.departuresContainer}>
           {nextThree.map((dep, i) => {
             const mins = getMinutesUntil(dep.departureTime);
-            const isDelayed = dep.status === "delayed";
+            const statusLabel = getStatusLabel(dep.status, dep.delay);
+            const statusColor = getStatusColor(dep.status);
             return (
               <View 
                 key={i} 
@@ -178,12 +165,31 @@ export function RouteCard({
               >
                 <View style={styles.timeSection}>
                   <ThemedText
-                    style={[
-                      styles.departureTime,
-                      { color: isDelayed ? Colors.light.delayed : theme.text },
-                    ]}
+                    style={[styles.departureTime, { color: theme.text }]}
                   >
                     {formatTime(dep.departureTime)}
+                  </ThemedText>
+                  <ThemedText
+                    type="small"
+                    style={{ color: statusColor }}
+                  >
+                    {statusLabel}
+                  </ThemedText>
+                  {dep.platform ? (
+                    <ThemedText
+                      type="small"
+                      style={{ color: theme.textSecondary }}
+                    >
+                      Platform {dep.platform}
+                    </ThemedText>
+                  ) : null}
+                </View>
+                <View style={styles.statusSection}>
+                  <ThemedText
+                    type="body"
+                    style={[styles.minutesText, { color: Colors.light.primary }]}
+                  >
+                    {mins > 0 ? `${mins} min` : "Now"}
                   </ThemedText>
                   {dep.line ? (
                     <ThemedText
@@ -191,25 +197,6 @@ export function RouteCard({
                       style={{ color: theme.textSecondary }}
                     >
                       {dep.line}
-                    </ThemedText>
-                  ) : null}
-                </View>
-                <View style={styles.statusSection}>
-                  <ThemedText
-                    type="body"
-                    style={[
-                      styles.minutesText,
-                      { color: isDelayed ? Colors.light.delayed : Colors.light.primary },
-                    ]}
-                  >
-                    {mins > 0 ? `${mins} min` : "Now"}
-                  </ThemedText>
-                  {isDelayed && dep.delay > 0 ? (
-                    <ThemedText
-                      type="small"
-                      style={{ color: Colors.light.delayed }}
-                    >
-                      +{dep.delay}m delay
                     </ThemedText>
                   ) : null}
                 </View>
@@ -240,36 +227,25 @@ export function RouteCard({
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
       {useGlass && Platform.OS === "ios" ? (
-        <AnimatedPressable
-          onPress={handlePress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          style={animatedStyle}
+        <GlassView
+          glassEffectStyle="regular"
+          tintColor={Colors.light.primary + "12"}
+          style={[styles.glassCard, { padding: Spacing.lg }]}
         >
-          <GlassView
-            glassEffectStyle="regular"
-            tintColor={Colors.light.primary + "12"}
-            style={[styles.glassCard, { padding: Spacing.lg }]}
-          >
-            {cardContent}
-          </GlassView>
-        </AnimatedPressable>
+          {cardContent}
+        </GlassView>
       ) : (
-        <AnimatedPressable
-          onPress={handlePress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+        <View
           style={[
             styles.card,
             {
               backgroundColor: theme.backgroundDefault,
               borderColor: theme.border,
             },
-            animatedStyle,
           ]}
         >
           {cardContent}
-        </AnimatedPressable>
+        </View>
       )}
     </Animated.View>
   );
@@ -303,14 +279,16 @@ const styles = StyleSheet.create({
   departureRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingVertical: Spacing.md,
   },
   timeSection: {
     flex: 1,
+    gap: 2,
   },
   statusSection: {
     alignItems: "flex-end",
+    gap: 2,
   },
   departureTime: {
     fontSize: 20,
