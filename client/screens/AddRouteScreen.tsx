@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import * as Location from "expo-location";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
@@ -15,7 +14,6 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 import { saveRoute } from "@/lib/storage";
-import { findNearestStation } from "@/lib/location";
 import type { Station, SavedRoute } from "@shared/types";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 
@@ -29,7 +27,6 @@ export default function AddRouteScreen() {
   const [origin, setOrigin] = useState<Station | undefined>();
   const [destination, setDestination] = useState<Station | undefined>();
   const [isSaving, setIsSaving] = useState(false);
-  const [hasAutoPopulated, setHasAutoPopulated] = useState(false);
 
   const { data: stationsData, isLoading: isLoadingStations } = useQuery<{
     stations: Station[];
@@ -39,72 +36,6 @@ export default function AddRouteScreen() {
   });
 
   const stations = stationsData?.stations || [];
-
-  const autoPopulateNearestStation = useCallback(async () => {
-    if (hasAutoPopulated || origin) return;
-
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        
-        if (stations.length > 0) {
-          const stationsWithCoords = stations.filter(s => s.latitude && s.longitude);
-          if (stationsWithCoords.length > 0) {
-            const nearest = findNearestStation(
-              location.coords.latitude,
-              location.coords.longitude,
-              stationsWithCoords
-            );
-            if (nearest) {
-              setOrigin(nearest);
-              setHasAutoPopulated(true);
-            }
-          }
-        }
-      } else if (status === "undetermined") {
-        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
-        if (newStatus === "granted") {
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          
-          if (stations.length > 0) {
-            const stationsWithCoords = stations.filter(s => s.latitude && s.longitude);
-            if (stationsWithCoords.length > 0) {
-              const nearest = findNearestStation(
-                location.coords.latitude,
-                location.coords.longitude,
-                stationsWithCoords
-              );
-              if (nearest) {
-                setOrigin(nearest);
-                setHasAutoPopulated(true);
-              }
-            }
-          }
-        }
-      }
-    } catch {
-    }
-  }, [stations, hasAutoPopulated, origin]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (stations.length > 0 && !hasAutoPopulated && !origin) {
-        autoPopulateNearestStation();
-      }
-    }, [stations, hasAutoPopulated, origin, autoPopulateNearestStation])
-  );
-
-  useEffect(() => {
-    if (stations.length > 0 && !hasAutoPopulated && !origin) {
-      autoPopulateNearestStation();
-    }
-  }, [stations]);
 
   const handleSave = async () => {
     if (!origin || !destination) {
@@ -144,7 +75,6 @@ export default function AddRouteScreen() {
 
       setOrigin(undefined);
       setDestination(undefined);
-      setHasAutoPopulated(false);
 
       navigation.getParent()?.navigate("MyRoutesTab" as keyof MainTabParamList);
     } catch {

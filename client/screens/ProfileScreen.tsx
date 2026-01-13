@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, Image, Switch, Pressable, Alert } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, StyleSheet, Image, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -11,16 +11,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
-import { getPreferences, savePreferences, clearAllData } from "@/lib/storage";
+import { getPreferences, clearAllData } from "@/lib/storage";
 import type { UserPreferences } from "@shared/types";
-
-type ThemeMode = "light" | "dark" | "auto";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
 
   const [preferences, setPreferences] = useState<UserPreferences>({
     displayName: "Commuter",
@@ -38,20 +36,6 @@ export default function ProfileScreen() {
       loadPreferences();
     }, [loadPreferences])
   );
-
-  const handleToggleNotifications = async (value: boolean) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newPrefs = { ...preferences, notificationsEnabled: value };
-    setPreferences(newPrefs);
-    await savePreferences(newPrefs);
-  };
-
-  const handleThemeChange = async (mode: ThemeMode) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newPrefs = { ...preferences, themeMode: mode };
-    setPreferences(newPrefs);
-    await savePreferences(newPrefs);
-  };
 
   const handleClearData = () => {
     Alert.alert(
@@ -94,82 +78,6 @@ export default function ProfileScreen() {
         <ThemedText type="caption" style={{ color: theme.textSecondary }}>
           GO Transit Commuter
         </ThemedText>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText
-          type="caption"
-          style={[styles.sectionHeader, { color: theme.textSecondary }]}
-        >
-          PREFERENCES
-        </ThemedText>
-
-        <View
-          style={[
-            styles.settingCard,
-            { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
-          ]}
-        >
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <Feather name="bell" size={20} color={theme.text} />
-              <ThemedText style={styles.settingLabel}>Notifications</ThemedText>
-            </View>
-            <Switch
-              value={preferences.notificationsEnabled}
-              onValueChange={handleToggleNotifications}
-              trackColor={{ false: theme.backgroundSecondary, true: Colors.light.primary }}
-              thumbColor="#fff"
-            />
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.settingCard,
-            { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
-          ]}
-        >
-          <ThemedText
-            type="caption"
-            style={[styles.themeLabel, { color: theme.textSecondary }]}
-          >
-            Theme
-          </ThemedText>
-          <View style={styles.themeOptions}>
-            {(["light", "dark", "auto"] as ThemeMode[]).map((mode) => (
-              <Pressable
-                key={mode}
-                onPress={() => handleThemeChange(mode)}
-                style={[
-                  styles.themeOption,
-                  {
-                    backgroundColor:
-                      preferences.themeMode === mode
-                        ? Colors.light.primary
-                        : theme.backgroundSecondary,
-                  },
-                ]}
-              >
-                <Feather
-                  name={mode === "light" ? "sun" : mode === "dark" ? "moon" : "monitor"}
-                  size={16}
-                  color={preferences.themeMode === mode ? "#fff" : theme.text}
-                />
-                <ThemedText
-                  type="small"
-                  style={{
-                    color: preferences.themeMode === mode ? "#fff" : theme.text,
-                    marginLeft: Spacing.xs,
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {mode}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        </View>
       </View>
 
       <View style={styles.section}>
@@ -250,34 +158,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
     padding: Spacing.lg,
-  },
-  settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  settingInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  settingLabel: {
-    fontWeight: "500",
-  },
-  themeLabel: {
-    marginBottom: Spacing.md,
-    fontWeight: "500",
-  },
-  themeOptions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  themeOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
   },
   aboutRow: {
     flexDirection: "row",
