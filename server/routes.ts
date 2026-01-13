@@ -97,54 +97,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Origin and destination required" });
     }
     try {
-      const endpoint = `/api/V1/Stop/NextService/${origin}`;
-      const data = await fetchMetrolinx(endpoint, apiKey);
-
-      const lines = data?.NextService?.Lines || [];
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+      const timeStr = now.toTimeString().slice(0, 5).replace(":", "");
       
-      const expectedLine = getLineForRoute(origin as string, destination as string);
+      const journeyEndpoint = `/api/V1/Schedule/Journey/${dateStr}/${origin}/${destination}/${timeStr}/10`;
+      const journeyData = await fetchMetrolinx(journeyEndpoint, apiKey);
       
-      const filteredLines = expectedLine 
-        ? lines.filter((line: any) => {
-            const lineCode = line.LineCode || "";
-            const directionName = (line.DirectionName || "").toUpperCase();
-            return lineCode === expectedLine || 
-                   directionName.includes((destination as string).toUpperCase());
-          })
-        : lines;
-
-      const departures = filteredLines.map((line: any) => {
-        const scheduledTime = line.ScheduledDepartureTime || "";
-        const computedTime = line.ComputedDepartureTime || "";
-        
-        let delayMinutes = 0;
-        if (scheduledTime && computedTime && scheduledTime !== computedTime) {
-          try {
-            const scheduled = new Date(scheduledTime.replace(" ", "T"));
-            const computed = new Date(computedTime.replace(" ", "T"));
-            delayMinutes = Math.round((computed.getTime() - scheduled.getTime()) / 60000);
-          } catch {}
+      const journeys = journeyData?.SchJourneys || [];
+      
+      const tripNumbers = new Set<string>();
+      const departures: any[] = [];
+      
+      for (const journey of journeys) {
+        const services = journey?.Services || [];
+        for (const service of services) {
+          const trips = service?.Trips?.Trip || [];
+          const tripArray = Array.isArray(trips) ? trips : [trips];
+          
+          for (const trip of tripArray) {
+            if (!trip) continue;
+            const tripNumber = trip.Number || "";
+            if (tripNumbers.has(tripNumber)) continue;
+            tripNumbers.add(tripNumber);
+            
+            const stops = trip.Stops?.Stop || [];
+            const stopsArray = Array.isArray(stops) ? stops : [stops];
+            const originStop = stopsArray.find((s: any) => s.Code === origin);
+            const destStop = stopsArray.find((s: any) => s.Code === destination);
+            const firstStop = stopsArray[0];
+            const lastStop = stopsArray[stopsArray.length - 1];
+            
+            const lineCode = trip.Line || "";
+            const lineName = trip.Display || lineCode;
+            const vehicleType = trip.Type === "T" ? "train" : trip.Type === "B" ? "bus" : getVehicleType(lineCode, lineName);
+            
+            let departureTime = service.StartTime || "";
+            let arrivalTime = service.EndTime || "";
+            
+            if (originStop?.Time) {
+              departureTime = `${now.toISOString().slice(0, 10)} ${originStop.Time}:00`;
+            } else if (firstStop?.Time) {
+              departureTime = `${now.toISOString().slice(0, 10)} ${firstStop.Time}:00`;
+            }
+            
+            if (destStop?.Time) {
+              arrivalTime = `${now.toISOString().slice(0, 10)} ${destStop.Time}:00`;
+            } else if (lastStop?.Time) {
+              arrivalTime = `${now.toISOString().slice(0, 10)} ${lastStop.Time}:00`;
+            }
+            
+            departures.push({
+              tripNumber,
+              departureTime,
+              arrivalTime,
+              platform: undefined,
+              delay: 0,
+              status: "on_time",
+              line: lineName || `Route ${lineCode}`,
+              vehicleType,
+            });
+          }
         }
-        
-        const status = line.DepartureStatus || "";
-        const isCancelled = status === "C";
-        const isDelayed = delayMinutes > 5 || status === "L";
-        const lineCode = line.LineCode || "";
-        const lineName = line.LineName || "";
-        
-        return {
-          tripNumber: line.TripNumber || "N/A",
-          departureTime: scheduledTime,
-          arrivalTime: "",
-          platform: line.ScheduledPlatform || line.ActualPlatform || undefined,
-          delay: delayMinutes,
-          status: isCancelled ? "cancelled" : isDelayed ? "delayed" : "on_time",
-          line: lineName || lineCode,
-          vehicleType: getVehicleType(lineCode, lineName),
-        };
-      });
-
-      const sortedDepartures = departures
+      }
+      
+      let realTimeDepartures = departures;
+      if (departures.length > 0) {
+        try {
+          const nextServiceEndpoint = `/api/V1/Stop/NextService/${origin}`;
+          const nextServiceData = await fetchMetrolinx(nextServiceEndpoint, apiKey);
+          const lines = nextServiceData?.NextService?.Lines || [];
+          
+          const realTimeMap = new Map<string, any>();
+          for (const line of lines) {
+            realTimeMap.set(line.TripNumber, line);
+          }
+          
+          realTimeDepartures = departures.map((dep) => {
+            const realTime = realTimeMap.get(dep.tripNumber);
+            if (realTime) {
+              const scheduledTime = realTime.ScheduledDepartureTime || "";
+              const computedTime = realTime.ComputedDepartureTime || "";
+              let delayMinutes = 0;
+              if (scheduledTime && computedTime && scheduledTime !== computedTime) {
+                try {
+                  const scheduled = new Date(scheduledTime.replace(" ", "T"));
+                  const computed = new Date(computedTime.replace(" ", "T"));
+                  delayMinutes = Math.round((computed.getTime() - scheduled.getTime()) / 60000);
+                } catch {}
+              }
+              const status = realTime.DepartureStatus || "";
+              const isCancelled = status === "C";
+              const isDelayed = delayMinutes > 5 || status === "L";
+              
+              return {
+                ...dep,
+                departureTime: scheduledTime || dep.departureTime,
+                platform: realTime.ScheduledPlatform || realTime.ActualPlatform || undefined,
+                delay: delayMinutes,
+                status: isCancelled ? "cancelled" : isDelayed ? "delayed" : "on_time",
+              };
+            }
+            return dep;
+          });
+        } catch {}
+      }
+      
+      const sortedDepartures = realTimeDepartures
         .filter((d: any) => d.departureTime)
         .sort((a: any, b: any) => {
           const timeA = new Date(a.departureTime.replace(" ", "T")).getTime();
