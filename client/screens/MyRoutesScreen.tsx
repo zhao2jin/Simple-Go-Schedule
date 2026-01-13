@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -22,7 +21,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function MyRoutesScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
@@ -88,7 +86,7 @@ export default function MyRoutesScreen() {
           styles.container,
           {
             backgroundColor: theme.backgroundRoot,
-            paddingTop: headerHeight + Spacing.xl,
+            paddingTop: insets.top + Spacing.xl,
           },
         ]}
       >
@@ -106,7 +104,7 @@ export default function MyRoutesScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: headerHeight + Spacing.xl,
+            paddingTop: insets.top + Spacing.xl,
             paddingBottom: tabBarHeight + Spacing["4xl"],
           },
         ]}

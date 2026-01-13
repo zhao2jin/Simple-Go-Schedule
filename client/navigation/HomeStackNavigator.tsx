@@ -1,7 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MyRoutesScreen from "@/screens/MyRoutesScreen";
-import { HeaderTitle } from "@/components/HeaderTitle";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type HomeStackParamList = {
@@ -19,7 +18,7 @@ export default function HomeStackNavigator() {
         name="MyRoutes"
         component={MyRoutesScreen}
         options={{
-          headerTitle: () => <HeaderTitle title="GO Tracker" />,
+          headerShown: false,
         }}
       />
     </Stack.Navigator>
