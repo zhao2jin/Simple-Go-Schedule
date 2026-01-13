@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withSequence,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
@@ -28,22 +27,17 @@ export function ReverseButton({
 }: ReverseButtonProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
-  const rotation = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { rotate: `${rotation.value}deg` },
-    ],
+    transform: [{ scale: scale.value }],
   }));
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    scale.value = withSequence(
-      withSpring(0.9, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
-    rotation.value = withSpring(rotation.value + 180, { damping: 15 });
+    scale.value = withSpring(0.9, { damping: 10 });
+    setTimeout(() => {
+      scale.value = withSpring(1, { damping: 15 });
+    }, 100);
     onToggle();
   };
 
