@@ -10,7 +10,20 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gotracker.app"
+      "bundleIdentifier": "com.gotracker.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "api.metrolinx.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -43,6 +56,12 @@
     ],
     "experiments": {
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "owner": ""
   }
 }
