@@ -12,7 +12,7 @@ import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Colors, Typography } from "@/constants/theme";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { SavedRoute, Departure } from "@shared/types";
 
 interface RouteCardProps {
@@ -30,16 +30,36 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 function formatTime(timeString: string): string {
   if (!timeString) return "--:--";
   try {
-    const date = new Date(timeString);
+    let date: Date;
+    const match = timeString.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+    if (match) {
+      date = new Date(
+        parseInt(match[1]),
+        parseInt(match[2]) - 1,
+        parseInt(match[3]),
+        parseInt(match[4]),
+        parseInt(match[5])
+      );
+    } else {
+      date = new Date(timeString);
+    }
+    
     if (isNaN(date.getTime())) {
-      const match = timeString.match(/(\d{2}):(\d{2})/);
-      if (match) return `${match[1]}:${match[2]}`;
+      const timeMatch = timeString.match(/(\d{2}):(\d{2})/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1], 10);
+        const mins = timeMatch[2];
+        const period = hours >= 12 ? "PM" : "AM";
+        const displayHour = hours % 12 || 12;
+        return `${displayHour}:${mins} ${period}`;
+      }
       return timeString.slice(0, 5);
     }
+    
     return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
+      hour: "numeric",
       minute: "2-digit",
-      hour12: false,
+      hour12: true,
     });
   } catch {
     return timeString.slice(0, 5) || "--:--";
@@ -52,14 +72,25 @@ function getMinutesUntil(timeString: string): number {
     const now = new Date();
     let departure: Date;
     
-    const match = timeString.match(/(\d{2}):(\d{2})/);
+    const match = timeString.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
     if (match) {
-      departure = new Date();
-      departure.setHours(parseInt(match[1], 10));
-      departure.setMinutes(parseInt(match[2], 10));
-      departure.setSeconds(0);
+      departure = new Date(
+        parseInt(match[1]),
+        parseInt(match[2]) - 1,
+        parseInt(match[3]),
+        parseInt(match[4]),
+        parseInt(match[5])
+      );
     } else {
-      departure = new Date(timeString);
+      const timeMatch = timeString.match(/(\d{2}):(\d{2})/);
+      if (timeMatch) {
+        departure = new Date();
+        departure.setHours(parseInt(timeMatch[1], 10));
+        departure.setMinutes(parseInt(timeMatch[2], 10));
+        departure.setSeconds(0);
+      } else {
+        departure = new Date(timeString);
+      }
     }
     
     if (isNaN(departure.getTime())) return 0;
@@ -138,32 +169,50 @@ export function RouteCard({
             const mins = getMinutesUntil(dep.departureTime);
             const isDelayed = dep.status === "delayed";
             return (
-              <View key={i} style={styles.departureItem}>
-                <ThemedText
-                  style={[
-                    styles.departureTime,
-                    { color: isDelayed ? Colors.light.delayed : theme.text },
-                  ]}
-                >
-                  {formatTime(dep.departureTime)}
-                </ThemedText>
-                <ThemedText
-                  type="caption"
-                  style={[
-                    styles.minutesText,
-                    { color: isDelayed ? Colors.light.delayed : Colors.light.primary },
-                  ]}
-                >
-                  {mins > 0 ? `${mins} min` : "Now"}
-                </ThemedText>
-                {isDelayed && dep.delay > 0 ? (
+              <View 
+                key={i} 
+                style={[
+                  styles.departureRow,
+                  i < nextThree.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                ]}
+              >
+                <View style={styles.timeSection}>
                   <ThemedText
-                    type="small"
-                    style={[styles.delayText, { color: Colors.light.delayed }]}
+                    style={[
+                      styles.departureTime,
+                      { color: isDelayed ? Colors.light.delayed : theme.text },
+                    ]}
                   >
-                    +{dep.delay}m
+                    {formatTime(dep.departureTime)}
                   </ThemedText>
-                ) : null}
+                  {dep.line ? (
+                    <ThemedText
+                      type="small"
+                      style={{ color: theme.textSecondary }}
+                    >
+                      {dep.line}
+                    </ThemedText>
+                  ) : null}
+                </View>
+                <View style={styles.statusSection}>
+                  <ThemedText
+                    type="body"
+                    style={[
+                      styles.minutesText,
+                      { color: isDelayed ? Colors.light.delayed : Colors.light.primary },
+                    ]}
+                  >
+                    {mins > 0 ? `${mins} min` : "Now"}
+                  </ThemedText>
+                  {isDelayed && dep.delay > 0 ? (
+                    <ThemedText
+                      type="small"
+                      style={{ color: Colors.light.delayed }}
+                    >
+                      +{dep.delay}m delay
+                    </ThemedText>
+                  ) : null}
+                </View>
               </View>
             );
           })}
@@ -200,7 +249,7 @@ export function RouteCard({
           <GlassView
             glassEffectStyle="regular"
             tintColor={Colors.light.primary + "12"}
-            style={[styles.glassCard, { padding: Spacing["2xl"] }]}
+            style={[styles.glassCard, { padding: Spacing.lg }]}
           >
             {cardContent}
           </GlassView>
@@ -228,7 +277,7 @@ export function RouteCard({
 
 const styles = StyleSheet.create({
   card: {
-    padding: Spacing["2xl"],
+    padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     marginBottom: Spacing.lg,
@@ -240,7 +289,7 @@ const styles = StyleSheet.create({
   routeHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   routeText: {
     flexShrink: 1,
@@ -249,26 +298,29 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.sm,
   },
   departuresContainer: {
+    flexDirection: "column",
+  },
+  departureRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-  },
-  departureItem: {
     alignItems: "center",
+    paddingVertical: Spacing.md,
+  },
+  timeSection: {
     flex: 1,
   },
-  departureTime: {
-    fontSize: Typography.display.fontSize,
-    fontWeight: "700",
+  statusSection: {
+    alignItems: "flex-end",
   },
-  minutesText: {
-    marginTop: Spacing.xs,
+  departureTime: {
+    fontSize: 20,
     fontWeight: "600",
   },
-  delayText: {
-    marginTop: 2,
+  minutesText: {
+    fontWeight: "600",
   },
   noDeparturesContainer: {
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.lg,
     alignItems: "center",
   },
   alertBadge: {
@@ -278,7 +330,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.xs,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     gap: Spacing.xs,
   },
   alertText: {
