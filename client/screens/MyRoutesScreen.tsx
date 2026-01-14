@@ -14,6 +14,7 @@ import { ReverseButton } from "@/components/ReverseButton";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { DonationModal } from "@/components/DonationModal";
+import { CelebrationAnimation } from "@/components/CelebrationAnimation";
 import { useTheme } from "@/hooks/useTheme";
 import { useDonation } from "@/hooks/useDonation";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
@@ -36,6 +37,7 @@ export default function MyRoutesScreen() {
   const [isReversed, setIsReversed] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const loadRoutes = useCallback(async () => {
     const savedRoutes = await getSavedRoutes();
@@ -177,7 +179,15 @@ export default function MyRoutesScreen() {
       <DonationModal
         visible={showModal}
         onClose={handleDismiss}
-        onDonated={handleDonated}
+        onDonated={() => {
+          handleDonated();
+          setShowCelebration(true);
+        }}
+      />
+
+      <CelebrationAnimation
+        visible={showCelebration}
+        onComplete={() => setShowCelebration(false)}
       />
     </View>
   );

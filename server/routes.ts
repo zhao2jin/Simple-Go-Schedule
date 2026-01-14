@@ -361,9 +361,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/donation/checkout", async (req, res) => {
     try {
-      const { priceId } = req.body;
-      if (!priceId) {
-        return res.status(400).json({ error: "Price ID required" });
+      const { priceId, customAmount } = req.body;
+      
+      if (!priceId && !customAmount) {
+        return res.status(400).json({ error: "Price ID or custom amount required" });
       }
 
       const stripe = await getUncachableStripeClient();
@@ -372,9 +373,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const protocol = domain.includes('localhost') ? 'http' : 'https';
       const baseUrl = `${protocol}://${domain}`;
 
+      let lineItems;
+      
+      if (customAmount && typeof customAmount === 'number' && customAmount >= 100) {
+        lineItems = [{
+          price_data: {
+            currency: 'cad',
+            product_data: {
+              name: 'Support GO Tracker',
+              description: 'Custom donation - Thank you for your support!',
+            },
+            unit_amount: customAmount,
+          },
+          quantity: 1,
+        }];
+      } else if (priceId) {
+        lineItems = [{ price: priceId, quantity: 1 }];
+      } else {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        line_items: [{ price: priceId, quantity: 1 }],
+        line_items: lineItems,
         mode: 'payment',
         success_url: `${baseUrl}/donation/success`,
         cancel_url: `${baseUrl}/donation/cancel`,

@@ -152,7 +152,7 @@ export async function recordPromptDismiss(): Promise<void> {
   await saveDonationData({ lastPromptDismissDate: new Date().toISOString() });
 }
 
-const USAGE_THRESHOLD = 5;
+const USAGE_THRESHOLD = 7;
 const REMIND_INTERVAL_DAYS = 14;
 const DONATION_VALID_DAYS = 365;
 

@@ -4,9 +4,10 @@ import {
   View,
   StyleSheet,
   Pressable,
-  Linking,
   Platform,
   ActivityIndicator,
+  TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
@@ -32,22 +33,26 @@ interface DonationPrice {
 }
 
 const TIER_LABELS: Record<string, string> = {
-  coffee: "Coffee",
-  lunch: "Lunch",
-  generous: "Generous",
-  donation: "Donate",
+  small: "$2",
+  medium: "$5",
+  large: "$10",
+  custom: "Custom",
 };
 
 export function DonationModal({ visible, onClose, onDonated }: DonationModalProps) {
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const useGlass = isLiquidGlassAvailable() && Platform.OS === "ios";
   const [prices, setPrices] = useState<DonationPrice[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customAmount, setCustomAmount] = useState("");
 
   useEffect(() => {
     if (visible) {
       fetchPrices();
+      setIsCustom(false);
+      setCustomAmount("");
     }
   }, [visible]);
 
@@ -64,8 +69,25 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
     }
   };
 
+  const handleSelectPrice = (priceId: string) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync();
+    }
+    setSelectedPrice(priceId);
+    setIsCustom(false);
+  };
+
+  const handleSelectCustom = () => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync();
+    }
+    setIsCustom(true);
+    setSelectedPrice(null);
+  };
+
   const handleDonate = async () => {
-    if (!selectedPrice) return;
+    if (!selectedPrice && !isCustom) return;
+    if (isCustom && (!customAmount || parseFloat(customAmount) < 1)) return;
     
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -74,10 +96,14 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
     setLoading(true);
     
     try {
+      const body = isCustom 
+        ? { customAmount: Math.round(parseFloat(customAmount) * 100) }
+        : { priceId: selectedPrice };
+
       const response = await fetch(new URL("/api/donation/checkout", getApiUrl()).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId: selectedPrice }),
+        body: JSON.stringify(body),
       });
       
       const data = await response.json();
@@ -107,37 +133,33 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
     onClose();
   };
 
-  const formatPrice = (amount: number, currency: string) => {
-    const dollars = (amount / 100).toFixed(2);
-    const symbol = currency.toUpperCase() === "CAD" ? "CA$" : "$";
-    return `${symbol}${dollars}`;
+  const formatPrice = (amount: number) => {
+    return `$${Math.round(amount / 100)}`;
   };
 
+  const isValidCustomAmount = isCustom && customAmount && parseFloat(customAmount) >= 1;
+  const canDonate = selectedPrice || isValidCustomAmount;
+
   const modalContent = (
-    <View style={styles.contentContainer}>
-      <View style={[styles.iconContainer, { backgroundColor: theme.primary + "20" }]}>
-        <Feather name="heart" size={32} color={theme.primary} />
-      </View>
-      
-      <ThemedText type="h3" style={styles.title}>
-        Support GO Tracker
-      </ThemedText>
-      
-      <ThemedText type="body" style={[styles.description, { color: theme.textSecondary }]}>
-        This app is free and always will be. If you find it useful, consider supporting development with a small donation.
-      </ThemedText>
-      
-      {prices.length > 0 ? (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <View style={styles.contentContainer}>
+        <View style={[styles.iconContainer, { backgroundColor: theme.primary + "20" }]}>
+          <Feather name="heart" size={32} color={theme.primary} />
+        </View>
+        
+        <ThemedText type="h3" style={styles.title}>
+          Support GO Tracker
+        </ThemedText>
+        
+        <ThemedText type="body" style={[styles.description, { color: theme.textSecondary }]}>
+          This app is free and always will be. If you find it useful, consider supporting development.
+        </ThemedText>
+        
         <View style={styles.priceContainer}>
           {prices.map((price) => (
             <Pressable
               key={price.id}
-              onPress={() => {
-                if (Platform.OS !== "web") {
-                  Haptics.selectionAsync();
-                }
-                setSelectedPrice(price.id);
-              }}
+              onPress={() => handleSelectPrice(price.id)}
               style={[
                 styles.priceButton,
                 { 
@@ -150,54 +172,85 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
                 type="title" 
                 style={[
                   styles.priceAmount,
-                  { color: selectedPrice === price.id ? theme.primary : theme.textDefault }
+                  { color: selectedPrice === price.id ? theme.primary : theme.text }
                 ]}
               >
-                {formatPrice(price.amount, price.currency)}
-              </ThemedText>
-              <ThemedText 
-                type="caption" 
-                style={{ color: theme.textSecondary }}
-              >
-                {TIER_LABELS[price.tier] || price.tier}
+                {formatPrice(price.amount)}
               </ThemedText>
             </Pressable>
           ))}
-        </View>
-      ) : null}
-      
-      <Pressable
-        onPress={handleDonate}
-        disabled={loading || prices.length === 0}
-        style={[
-          styles.donateButton, 
-          { 
-            backgroundColor: theme.primary,
-            opacity: loading || prices.length === 0 ? 0.6 : 1,
-          }
-        ]}
-      >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
-        ) : (
-          <>
-            <Feather name="credit-card" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-            <ThemedText type="title" style={styles.buttonText}>
-              Donate Now
+          
+          <Pressable
+            onPress={handleSelectCustom}
+            style={[
+              styles.priceButton,
+              { 
+                borderColor: isCustom ? theme.primary : theme.border,
+                backgroundColor: isCustom ? theme.primary + "15" : "transparent",
+              },
+            ]}
+          >
+            <ThemedText 
+              type="title" 
+              style={[
+                styles.priceAmount,
+                { color: isCustom ? theme.primary : theme.text }
+              ]}
+            >
+              Custom
             </ThemedText>
-          </>
-        )}
-      </Pressable>
-      
-      <Pressable
-        onPress={handleMaybeLater}
-        style={[styles.laterButton, { borderColor: theme.border }]}
-      >
-        <ThemedText type="body" style={{ color: theme.textSecondary }}>
-          Maybe Later
-        </ThemedText>
-      </Pressable>
-    </View>
+          </Pressable>
+        </View>
+
+        {isCustom ? (
+          <View style={[styles.customInputContainer, { borderColor: theme.border }]}>
+            <ThemedText type="title" style={{ color: theme.text }}>$</ThemedText>
+            <TextInput
+              style={[styles.customInput, { color: theme.text }]}
+              value={customAmount}
+              onChangeText={setCustomAmount}
+              placeholder="Enter amount"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+            <ThemedText type="body" style={{ color: theme.textSecondary }}>CAD</ThemedText>
+          </View>
+        ) : null}
+        
+        <Pressable
+          onPress={handleDonate}
+          disabled={loading || !canDonate}
+          style={[
+            styles.donateButton, 
+            { 
+              backgroundColor: theme.primary,
+              opacity: loading || !canDonate ? 0.6 : 1,
+            }
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <>
+              <Feather name="credit-card" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+              <ThemedText type="title" style={styles.buttonText}>
+                Donate Now
+              </ThemedText>
+            </>
+          )}
+        </Pressable>
+        
+        <Pressable
+          onPress={handleMaybeLater}
+          style={[styles.laterButton, { borderColor: theme.border }]}
+        >
+          <ThemedText type="body" style={{ color: theme.textSecondary }}>
+            Maybe Later
+          </ThemedText>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   );
 
   return (
@@ -273,19 +326,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: Spacing.sm,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     width: "100%",
   },
   priceButton: {
     flex: 1,
     alignItems: "center",
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
     borderRadius: BorderRadius.lg,
     borderWidth: 2,
   },
   priceAmount: {
-    marginBottom: 2,
+    fontSize: 16,
+  },
+  customInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  customInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "600",
+    paddingVertical: Spacing.xs,
   },
   donateButton: {
     flexDirection: "row",
