@@ -4,6 +4,13 @@ import type { SavedRoute, UserPreferences } from "@shared/types";
 const ROUTES_KEY = "@go_tracker_routes";
 const PREFERENCES_KEY = "@go_tracker_preferences";
 const REVERSED_KEY = "@go_tracker_reversed";
+const DONATION_KEY = "@go_tracker_donation";
+
+export interface DonationData {
+  usageCount: number;
+  lastDonationDate: string | null;
+  lastPromptDismissDate: string | null;
+}
 
 const defaultPreferences: UserPreferences = {
   displayName: "Commuter",
@@ -95,8 +102,86 @@ export async function setReversedMode(reversed: boolean): Promise<void> {
 
 export async function clearAllData(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([ROUTES_KEY, PREFERENCES_KEY, REVERSED_KEY]);
+    await AsyncStorage.multiRemove([ROUTES_KEY, PREFERENCES_KEY, REVERSED_KEY, DONATION_KEY]);
   } catch {
     // silently fail
+  }
+}
+
+const defaultDonationData: DonationData = {
+  usageCount: 0,
+  lastDonationDate: null,
+  lastPromptDismissDate: null,
+};
+
+export async function getDonationData(): Promise<DonationData> {
+  try {
+    const data = await AsyncStorage.getItem(DONATION_KEY);
+    return data ? { ...defaultDonationData, ...JSON.parse(data) } : defaultDonationData;
+  } catch {
+    return defaultDonationData;
+  }
+}
+
+export async function saveDonationData(data: Partial<DonationData>): Promise<void> {
+  try {
+    const current = await getDonationData();
+    const updated = { ...current, ...data };
+    await AsyncStorage.setItem(DONATION_KEY, JSON.stringify(updated));
+  } catch {
+    // silently fail
+  }
+}
+
+export async function incrementUsageCount(): Promise<number> {
+  try {
+    const current = await getDonationData();
+    const newCount = current.usageCount + 1;
+    await saveDonationData({ usageCount: newCount });
+    return newCount;
+  } catch {
+    return 0;
+  }
+}
+
+export async function recordDonation(): Promise<void> {
+  await saveDonationData({ lastDonationDate: new Date().toISOString() });
+}
+
+export async function recordPromptDismiss(): Promise<void> {
+  await saveDonationData({ lastPromptDismissDate: new Date().toISOString() });
+}
+
+const USAGE_THRESHOLD = 5;
+const REMIND_INTERVAL_DAYS = 14;
+const DONATION_VALID_DAYS = 365;
+
+export async function shouldShowDonationPrompt(): Promise<boolean> {
+  try {
+    const data = await getDonationData();
+    
+    if (data.usageCount < USAGE_THRESHOLD) {
+      return false;
+    }
+    
+    if (data.lastDonationDate) {
+      const donationDate = new Date(data.lastDonationDate);
+      const daysSinceDonation = (Date.now() - donationDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceDonation < DONATION_VALID_DAYS) {
+        return false;
+      }
+    }
+    
+    if (data.lastPromptDismissDate) {
+      const dismissDate = new Date(data.lastPromptDismissDate);
+      const daysSinceDismiss = (Date.now() - dismissDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismiss < REMIND_INTERVAL_DAYS) {
+        return false;
+      }
+    }
+    
+    return true;
+  } catch {
+    return false;
   }
 }

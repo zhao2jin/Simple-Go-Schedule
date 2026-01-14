@@ -13,7 +13,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { ReverseButton } from "@/components/ReverseButton";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
+import { DonationModal } from "@/components/DonationModal";
 import { useTheme } from "@/hooks/useTheme";
+import { useDonation } from "@/hooks/useDonation";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import { getSavedRoutes, getReversedMode, setReversedMode } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -28,6 +30,7 @@ export default function MyRoutesScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const { showModal, trackUsage, checkAndShowPrompt, handleDonated, handleDismiss } = useDonation();
 
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [isReversed, setIsReversed] = useState(false);
@@ -45,7 +48,8 @@ export default function MyRoutesScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRoutes();
-    }, [loadRoutes])
+      checkAndShowPrompt();
+    }, [loadRoutes, checkAndShowPrompt])
   );
 
   const handleRefresh = async () => {
@@ -62,7 +66,9 @@ export default function MyRoutesScreen() {
     await setReversedMode(newValue);
   };
 
-  const handleRoutePress = (route: SavedRoute) => {
+  const handleRoutePress = async (route: SavedRoute) => {
+    await trackUsage();
+    
     const origin = isReversed ? route.destinationCode : route.originCode;
     const destination = isReversed ? route.originCode : route.destinationCode;
     const originName = isReversed ? route.destinationName : route.originName;
@@ -167,6 +173,12 @@ export default function MyRoutesScreen() {
           bottomOffset={tabBarHeight + Spacing.xl + insets.bottom}
         />
       ) : null}
+
+      <DonationModal
+        visible={showModal}
+        onClose={handleDismiss}
+        onDonated={handleDonated}
+      />
     </View>
   );
 }
