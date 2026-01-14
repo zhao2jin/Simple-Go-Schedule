@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   View,
@@ -6,14 +6,17 @@ import {
   Pressable,
   Linking,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 
 interface DonationModalProps {
   visible: boolean;
@@ -21,21 +24,79 @@ interface DonationModalProps {
   onDonated: () => void;
 }
 
-const DONATION_URL = "https://ko-fi.com/gotracker";
+interface DonationPrice {
+  id: string;
+  amount: number;
+  currency: string;
+  tier: string;
+}
+
+const TIER_LABELS: Record<string, string> = {
+  coffee: "Coffee",
+  lunch: "Lunch",
+  generous: "Generous",
+  donation: "Donate",
+};
 
 export function DonationModal({ visible, onClose, onDonated }: DonationModalProps) {
   const { theme, isDark } = useTheme();
   const useGlass = isLiquidGlassAvailable() && Platform.OS === "ios";
+  const [prices, setPrices] = useState<DonationPrice[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      fetchPrices();
+    }
+  }, [visible]);
+
+  const fetchPrices = async () => {
+    try {
+      const response = await fetch(new URL("/api/donation/prices", getApiUrl()).toString());
+      const data = await response.json();
+      if (data.prices && data.prices.length > 0) {
+        setPrices(data.prices);
+        setSelectedPrice(data.prices[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to fetch donation prices:", error);
+    }
+  };
 
   const handleDonate = async () => {
+    if (!selectedPrice) return;
+    
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
+    
+    setLoading(true);
+    
     try {
-      await Linking.openURL(DONATION_URL);
-      onDonated();
-    } catch {
-      onClose();
+      const response = await fetch(new URL("/api/donation/checkout", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: selectedPrice }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        if (Platform.OS === "web") {
+          window.location.href = data.url;
+        } else {
+          const result = await WebBrowser.openBrowserAsync(data.url);
+          if (result.type === "dismiss") {
+            onDonated();
+          }
+        }
+        onClose();
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,6 +105,12 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onClose();
+  };
+
+  const formatPrice = (amount: number, currency: string) => {
+    const dollars = (amount / 100).toFixed(2);
+    const symbol = currency.toUpperCase() === "CAD" ? "CA$" : "$";
+    return `${symbol}${dollars}`;
   };
 
   const modalContent = (
@@ -60,14 +127,66 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
         This app is free and always will be. If you find it useful, consider supporting development with a small donation.
       </ThemedText>
       
+      {prices.length > 0 ? (
+        <View style={styles.priceContainer}>
+          {prices.map((price) => (
+            <Pressable
+              key={price.id}
+              onPress={() => {
+                if (Platform.OS !== "web") {
+                  Haptics.selectionAsync();
+                }
+                setSelectedPrice(price.id);
+              }}
+              style={[
+                styles.priceButton,
+                { 
+                  borderColor: selectedPrice === price.id ? theme.primary : theme.border,
+                  backgroundColor: selectedPrice === price.id ? theme.primary + "15" : "transparent",
+                },
+              ]}
+            >
+              <ThemedText 
+                type="title" 
+                style={[
+                  styles.priceAmount,
+                  { color: selectedPrice === price.id ? theme.primary : theme.textDefault }
+                ]}
+              >
+                {formatPrice(price.amount, price.currency)}
+              </ThemedText>
+              <ThemedText 
+                type="caption" 
+                style={{ color: theme.textSecondary }}
+              >
+                {TIER_LABELS[price.tier] || price.tier}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      
       <Pressable
         onPress={handleDonate}
-        style={[styles.donateButton, { backgroundColor: theme.primary }]}
+        disabled={loading || prices.length === 0}
+        style={[
+          styles.donateButton, 
+          { 
+            backgroundColor: theme.primary,
+            opacity: loading || prices.length === 0 ? 0.6 : 1,
+          }
+        ]}
       >
-        <Feather name="coffee" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-        <ThemedText type="title" style={styles.buttonText}>
-          Buy Me a Coffee
-        </ThemedText>
+        {loading ? (
+          <ActivityIndicator color="#FFFFFF" size="small" />
+        ) : (
+          <>
+            <Feather name="credit-card" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+            <ThemedText type="title" style={styles.buttonText}>
+              Donate Now
+            </ThemedText>
+          </>
+        )}
       </Pressable>
       
       <Pressable
@@ -147,8 +266,26 @@ const styles = StyleSheet.create({
   },
   description: {
     textAlign: "center",
-    marginBottom: Spacing["2xl"],
+    marginBottom: Spacing.xl,
     lineHeight: 22,
+  },
+  priceContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+    width: "100%",
+  },
+  priceButton: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+  },
+  priceAmount: {
+    marginBottom: 2,
   },
   donateButton: {
     flexDirection: "row",
