@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "GO Tracker",
-    "slug": "go-tracker",
+    "name": "Simply Go",
+    "slug": "simply-go",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gotracker",
+    "scheme": "simplygo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gotracker.app",
+      "bundleIdentifier": "com.simplygo.app",
       "buildNumber": "1",
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -32,7 +32,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.gotracker.app"
+      "package": "com.simplygo.app"
     },
     "web": {
       "output": "single",

@@ -1,7 +1,7 @@
-# GO Tracker - Transit Schedule App
+# Simply Go - Transit Schedule App
 
 ## Overview
-GO Tracker is an iOS mobile app for tracking GO Transit train schedules. Users can save their preferred commute routes and see upcoming departure times at a glance. The app features a simple reverse toggle to swap directions for the commute home.
+Simply Go is an iOS mobile app for tracking GO Transit train schedules. Users can save their preferred commute routes and see upcoming departure times at a glance. The app features a simple reverse toggle to swap directions for the commute home.
 
 ## Tech Stack
 - **Frontend**: React Native with Expo

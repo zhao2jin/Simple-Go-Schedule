@@ -6,7 +6,7 @@ async function createDonationProducts() {
   console.log('Checking for existing donation products...');
   
   const existingProducts = await stripe.products.search({ 
-    query: "metadata['app']:'go-tracker'" 
+    query: "metadata['app']:'simply-go'" 
   });
 
   if (existingProducts.data.length > 0) {
@@ -20,10 +20,10 @@ async function createDonationProducts() {
   console.log('Creating donation products...');
 
   const product = await stripe.products.create({
-    name: 'Support GO Tracker',
-    description: 'Thank you for supporting GO Tracker! Your donation helps keep the app free and maintained.',
+    name: 'Support Simply Go',
+    description: 'Thank you for supporting Simply Go! Your donation helps keep the app free and maintained.',
     metadata: {
-      app: 'go-tracker',
+      app: 'simply-go',
       type: 'donation'
     }
   });

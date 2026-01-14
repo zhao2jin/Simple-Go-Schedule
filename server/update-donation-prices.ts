@@ -6,7 +6,7 @@ async function updateDonationPrices() {
   console.log('Finding existing donation product...');
   
   const existingProducts = await stripe.products.search({ 
-    query: "metadata['app']:'go-tracker' AND metadata['type']:'donation'" 
+    query: "metadata['app']:'simply-go' AND metadata['type']:'donation'" 
   });
 
   let productId: string;
@@ -24,10 +24,10 @@ async function updateDonationPrices() {
   } else {
     console.log('Creating new donation product...');
     const product = await stripe.products.create({
-      name: 'Support GO Tracker',
-      description: 'Thank you for supporting GO Tracker! Your donation helps keep the app free and maintained.',
+      name: 'Support Simply Go',
+      description: 'Thank you for supporting Simply Go! Your donation helps keep the app free and maintained.',
       metadata: {
-        app: 'go-tracker',
+        app: 'simply-go',
         type: 'donation'
       }
     });

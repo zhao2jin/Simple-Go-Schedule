@@ -380,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price_data: {
             currency: 'cad',
             product_data: {
-              name: 'Support GO Tracker',
+              name: 'Support Simply Go',
               description: 'Custom donation - Thank you for your support!',
             },
             unit_amount: customAmount,
