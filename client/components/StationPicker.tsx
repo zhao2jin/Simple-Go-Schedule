@@ -24,6 +24,7 @@ interface StationPickerProps {
   onSelect: (station: Station) => void;
   placeholder?: string;
   testID?: string;
+  defaultLine?: GoLine;
 }
 
 export function StationPicker({
@@ -33,6 +34,7 @@ export function StationPicker({
   onSelect,
   placeholder = "Select station",
   testID,
+  defaultLine,
 }: StationPickerProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -77,6 +79,9 @@ export function StationPicker({
 
   const handleOpen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (defaultLine) {
+      setSelectedLine(defaultLine);
+    }
     setIsOpen(true);
   };
 

@@ -16,6 +16,7 @@ import { Spacing } from "@/constants/theme";
 import { saveRoute } from "@/lib/storage";
 import type { Station, SavedRoute } from "@shared/types";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
+import { getLineForStation } from "@shared/lines";
 
 export default function AddRouteScreen() {
   const insets = useSafeAreaInsets();
@@ -124,6 +125,7 @@ export default function AddRouteScreen() {
           onSelect={setDestination}
           placeholder={isLoadingStations ? "Loading stations..." : "Select destination station"}
           testID="picker-destination-station"
+          defaultLine={origin ? getLineForStation(origin.code) : undefined}
         />
       </View>
 
