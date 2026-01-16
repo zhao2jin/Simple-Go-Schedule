@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Simply Go",
-    "slug": "simply-go",
+    "name": "Simple Go Schedule",
+    "slug": "mygotrainschedule",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "simplygo",
+    "scheme": "mygotrainschedule",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.simplygo.app",
+      "bundleIdentifier": "com.mygotrainschedule.app",
       "buildNumber": "1",
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -32,7 +32,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.simplygo.app"
+      "package": "com.mygotrainschedule.app"
     },
     "web": {
       "output": "single",
