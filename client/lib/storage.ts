@@ -152,22 +152,17 @@ export async function recordPromptDismiss(): Promise<void> {
   await saveDonationData({ lastPromptDismissDate: new Date().toISOString() });
 }
 
-const USAGE_THRESHOLD = 7;
-const REMIND_INTERVAL_DAYS = 14;
-const DONATION_VALID_DAYS = 365;
+const REMIND_INTERVAL_DAYS = 30;
+const DONATION_VALID_YEARS = 2;
 
 export async function shouldShowDonationPrompt(): Promise<boolean> {
   try {
     const data = await getDonationData();
     
-    if (data.usageCount < USAGE_THRESHOLD) {
-      return false;
-    }
-    
     if (data.lastDonationDate) {
       const donationDate = new Date(data.lastDonationDate);
       const daysSinceDonation = (Date.now() - donationDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSinceDonation < DONATION_VALID_DAYS) {
+      if (daysSinceDonation < DONATION_VALID_YEARS * 365) {
         return false;
       }
     }
