@@ -249,7 +249,7 @@ export function RouteCard({
   const origin = isReversed ? route.destinationName : route.originName;
   const destination = isReversed ? route.originName : route.destinationName;
 
-  const nextThree = departures.slice(0, 3);
+  const nextSeven = departures.slice(0, 7);
 
   const handleDepartureTap = (dep: Departure) => {
     if (dep.status !== "on_time") {
@@ -285,9 +285,9 @@ export function RouteCard({
         <View style={styles.loadingContainer}>
           <View style={[styles.skeleton, { backgroundColor: theme.backgroundSecondary }]} />
         </View>
-      ) : nextThree.length > 0 ? (
+      ) : nextSeven.length > 0 ? (
         <View style={styles.departuresContainer}>
-          {nextThree.map((dep, i) => {
+          {nextSeven.map((dep, i) => {
             const mins = getMinutesUntil(dep.departureTime);
             const statusLabel = getStatusLabel(dep.status, dep.delay);
             const statusColor = getStatusColor(dep.status);
@@ -297,7 +297,7 @@ export function RouteCard({
               <View 
                 style={[
                   styles.departureRow,
-                  i < nextThree.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                  i < nextSeven.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
                 ]}
               >
                 <View style={styles.timeSection}>
