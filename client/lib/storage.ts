@@ -10,6 +10,7 @@ export interface DonationData {
   usageCount: number;
   lastDonationDate: string | null;
   lastPromptDismissDate: string | null;
+  firstUseDate: string | null;
 }
 
 const defaultPreferences: UserPreferences = {
@@ -112,6 +113,7 @@ const defaultDonationData: DonationData = {
   usageCount: 0,
   lastDonationDate: null,
   lastPromptDismissDate: null,
+  firstUseDate: null,
 };
 
 export async function getDonationData(): Promise<DonationData> {
@@ -137,7 +139,11 @@ export async function incrementUsageCount(): Promise<number> {
   try {
     const current = await getDonationData();
     const newCount = current.usageCount + 1;
-    await saveDonationData({ usageCount: newCount });
+    const updates: Partial<DonationData> = { usageCount: newCount };
+    if (!current.firstUseDate) {
+      updates.firstUseDate = new Date().toISOString();
+    }
+    await saveDonationData(updates);
     return newCount;
   } catch {
     return 0;
@@ -158,6 +164,16 @@ const DONATION_VALID_YEARS = 2;
 export async function shouldShowDonationPrompt(): Promise<boolean> {
   try {
     const data = await getDonationData();
+    
+    if (!data.firstUseDate) {
+      return false;
+    }
+    
+    const firstUse = new Date(data.firstUseDate);
+    const daysSinceFirstUse = (Date.now() - firstUse.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceFirstUse < REMIND_INTERVAL_DAYS) {
+      return false;
+    }
     
     if (data.lastDonationDate) {
       const donationDate = new Date(data.lastDonationDate);
