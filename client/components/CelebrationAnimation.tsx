@@ -142,7 +142,7 @@ export function CelebrationAnimation({ visible, onComplete }: CelebrationAnimati
         </ThemedText>
         
         <ThemedText type="body" style={[styles.message, { color: theme.textSecondary }]}>
-          Your support means the world to us and helps keep Simply Go free for everyone.
+          Your support means the world to us and helps keep Simple Go Schedule free for everyone.
         </ThemedText>
       </Animated.View>
     </Animated.View>

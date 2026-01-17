@@ -148,7 +148,7 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
         </View>
         
         <ThemedText type="h3" style={styles.title}>
-          Support Simply Go
+          Support Simple Go Schedule
         </ThemedText>
         
         <ThemedText type="body" style={[styles.description, { color: theme.textSecondary }]}>
