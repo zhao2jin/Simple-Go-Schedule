@@ -238,6 +238,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/trip/:tripNumber", async (req, res) => {
+    if (!apiKey) {
+      return res.status(500).json({ error: "API key not configured" });
+    }
+    const { tripNumber } = req.params;
+    const { origin, destination, date } = req.query;
+
+    if (!tripNumber || !origin || !destination) {
+      return res.status(400).json({ error: "Trip number, origin, and destination required" });
+    }
+
+    try {
+      // Use Eastern Time (Toronto) for API queries
+      const now = new Date();
+      const torontoFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Toronto",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+      const parts = torontoFormatter.formatToParts(now);
+      const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
+      const year = getPart("year");
+      const month = getPart("month");
+      const day = getPart("day");
+      const hours = getPart("hour");
+      const minutes = getPart("minute");
+      const dateStr = date || `${year}${month}${day}`;
+      const timeStr = `${hours}${minutes}`;
+
+      const journeyEndpoint = `/api/V1/Schedule/Journey/${dateStr}/${origin}/${destination}/${timeStr}/10`;
+      const journeyData = await fetchMetrolinx(journeyEndpoint, apiKey);
+
+      const journeys = journeyData?.SchJourneys || [];
+
+      // Find the specific trip
+      for (const journey of journeys) {
+        const services = journey?.Services || [];
+        for (const service of services) {
+          const trips = service?.Trips?.Trip || [];
+          const tripArray = Array.isArray(trips) ? trips : [trips];
+
+          for (const trip of tripArray) {
+            if (!trip || trip.Number !== tripNumber) continue;
+
+            const stops = trip.Stops?.Stop || [];
+            const stopsArray = Array.isArray(stops) ? stops : [stops];
+
+            const stopTimes = stopsArray.map((stop: any) => ({
+              stationCode: stop.Code || "",
+              stationName: stop.Name || "",
+              arrivalTime: stop.ArrivalTime || "",
+              departureTime: stop.DepartureTime || "",
+              platform: stop.Platform || undefined,
+            }));
+
+            return res.json({
+              tripNumber,
+              line: trip.Display || trip.Line || "",
+              stops: stopTimes,
+              vehicleType: trip.Type === "T" ? "train" : trip.Type === "B" ? "bus" : "train",
+            });
+          }
+        }
+      }
+
+      res.status(404).json({ error: "Trip not found" });
+    } catch (error: any) {
+      console.error("Error fetching trip details:", error.message);
+      res.status(500).json({ error: "Failed to fetch trip details" });
+    }
+  });
+
   app.get("/api/departures", async (req, res) => {
     if (!apiKey) {
       return res.status(500).json({ error: "API key not configured" });
@@ -301,13 +377,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await fetchMetrolinx(endpoint, apiKey);
 
       const messages = data?.Messages || data?.ServiceAlerts?.Messages || [];
-      const alerts = messages.map((msg: any) => ({
-        id: msg.MessageId || msg.Id || String(Date.now()),
-        title: msg.Subject || msg.Title || "Service Alert",
-        description: msg.Body || msg.Description || "",
-        severity: msg.Priority === "High" ? "severe" : msg.Priority === "Medium" ? "warning" : "info",
-        affectedRoutes: msg.Routes || [],
-      }));
+      const alerts = messages.map((msg: any) => {
+        // Extract affected line codes from AssociatedLines or Lines array
+        const affectedLines = msg.AssociatedLines?.map((line: any) => line.LineCode || line.Code || line) ||
+                             msg.Lines?.map((line: any) => line.LineCode || line.Code || line) ||
+                             msg.Routes ||
+                             [];
+
+        // Determine severity based on Category, SubCategory, or Priority
+        let severity: 'info' | 'warning' | 'severe' = 'info';
+        if (msg.Category?.toLowerCase().includes('disruption') ||
+            msg.SubCategory?.toLowerCase().includes('suspension') ||
+            msg.Priority === 'High') {
+          severity = 'severe';
+        } else if (msg.Priority === 'Medium' ||
+                   msg.SubCategory?.toLowerCase().includes('delay')) {
+          severity = 'warning';
+        }
+
+        return {
+          id: msg.Code || msg.MessageId || msg.Id || String(Date.now()),
+          title: msg.SubjectEnglish || msg.Subject || msg.Title || "Service Alert",
+          description: msg.BodyEnglish || msg.Body || msg.Description || "",
+          severity,
+          affectedRoutes: affectedLines,
+        };
+      });
 
       res.json({ alerts });
     } catch (error: any) {

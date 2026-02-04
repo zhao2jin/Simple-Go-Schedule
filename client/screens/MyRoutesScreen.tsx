@@ -1,27 +1,27 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, RefreshControl, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, RefreshControl, Alert, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
-import { SwipeableRouteCard } from "@/components/SwipeableRouteCard";
+import { RouteCard } from "@/components/RouteCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ReverseButton } from "@/components/ReverseButton";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { DonationModal } from "@/components/DonationModal";
 import { CelebrationAnimation } from "@/components/CelebrationAnimation";
+import { ServiceAlertBanner } from "@/components/ServiceAlertBanner";
 import { useTheme } from "@/hooks/useTheme";
 import { useDonation } from "@/hooks/useDonation";
-import { Spacing, BorderRadius, Colors } from "@/constants/theme";
-import { getSavedRoutes, getReversedMode, setReversedMode } from "@/lib/storage";
+import { Spacing } from "@/constants/theme";
+import { getSavedRoutes, getReversedMode, setReversedMode, deleteRoute } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
-import type { SavedRoute, JourneyResult } from "@shared/types";
+import type { SavedRoute, JourneyResult, ServiceAlert } from "@shared/types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -38,6 +38,17 @@ export default function MyRoutesScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // Fetch service alerts
+  const { data: alertsData } = useQuery<{ alerts: ServiceAlert[] }>({
+    queryKey: ["/api/alerts"],
+    queryFn: async () => {
+      const response = await fetch("/api/alerts");
+      return response.json();
+    },
+    refetchInterval: 60000, // Refresh every 60 seconds
+    staleTime: 30000, // Consider data stale after 30 seconds
+  });
 
   const loadRoutes = useCallback(async () => {
     const savedRoutes = await getSavedRoutes();
@@ -59,6 +70,7 @@ export default function MyRoutesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await loadRoutes();
     queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
     setIsRefreshing(false);
   };
 
@@ -129,6 +141,12 @@ export default function MyRoutesScreen() {
           />
         }
       >
+        {alertsData?.alerts && alertsData.alerts.length > 0 && (
+          <ServiceAlertBanner
+            alerts={alertsData.alerts}
+            affectedRouteCodes={routes.flatMap(r => [r.originCode, r.destinationCode])}
+          />
+        )}
         {routes.length === 0 ? (
           <EmptyState
             title="No Routes Yet"
@@ -140,19 +158,6 @@ export default function MyRoutesScreen() {
           <>
             <View style={styles.header}>
               <ThemedText type="h3">My Routes</ThemedText>
-              <Pressable
-                onPress={handleRefresh}
-                style={({ pressed }) => [
-                  styles.refreshButton,
-                  { 
-                    backgroundColor: theme.backgroundDefault,
-                    borderColor: theme.border,
-                    opacity: pressed ? 0.7 : 1 
-                  },
-                ]}
-              >
-                <Feather name="refresh-cw" size={18} color={Colors.light.primary} />
-              </Pressable>
             </View>
             {routes.map((route, index) => (
               <RouteCardWithData
@@ -208,6 +213,8 @@ function RouteCardWithData({
 }) {
   const origin = isReversed ? route.destinationCode : route.originCode;
   const destination = isReversed ? route.originCode : route.destinationCode;
+  const originName = isReversed ? route.destinationName : route.originName;
+  const destName = isReversed ? route.originName : route.destinationName;
 
   const { data, isLoading } = useQuery<JourneyResult>({
     queryKey: ["/api/journey", `origin=${origin}`, `destination=${destination}`],
@@ -215,17 +222,41 @@ function RouteCardWithData({
     staleTime: 30000,
   });
 
+  const handleLongPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      "Delete Route",
+      `Remove ${originName} → ${destName}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await deleteRoute(route.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onDelete();
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <SwipeableRouteCard
-      route={route}
-      departures={data?.departures || []}
-      isReversed={isReversed}
-      hasAlert={data?.alerts && data.alerts.length > 0}
-      onPress={onPress}
-      onDelete={onDelete}
-      index={index}
-      isLoading={isLoading}
-    />
+    <Pressable onPress={onPress} onLongPress={handleLongPress} delayLongPress={500}>
+      <RouteCard
+        route={route}
+        departures={data?.departures || []}
+        isReversed={isReversed}
+        hasAlert={data?.alerts && data.alerts.length > 0}
+        onPress={() => {}}
+        index={index}
+        isLoading={isLoading}
+      />
+    </Pressable>
   );
 }
 
@@ -244,17 +275,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: Spacing.lg,
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
