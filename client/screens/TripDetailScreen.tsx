@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp } from "@react-navigation/native";
@@ -42,7 +42,7 @@ export default function TripDetailScreen() {
 
   const { tripNumber, origin, destination } = route.params;
 
-  const { data, isLoading } = useQuery<TripDetail>({
+  const { data, isLoading, error, refetch } = useQuery<TripDetail>({
     queryKey: ["/api/trip", tripNumber, origin, destination],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -50,10 +50,17 @@ export default function TripDetailScreen() {
         destination,
       });
       const response = await fetch(`/api/trip/${tripNumber}?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch trip details");
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Trip fetch error:", response.status, errorText);
+        throw new Error(`Failed to fetch trip details: ${response.status}`);
+      }
+      const result = await response.json();
+      console.log("Trip details:", result);
+      return result;
     },
     staleTime: 30000,
+    retry: 2,
   });
 
   return (
@@ -92,7 +99,31 @@ export default function TripDetailScreen() {
           STATION STOPS
         </ThemedText>
 
-        {isLoading ? (
+        {error ? (
+          <View style={styles.noStops}>
+            <Feather name="alert-circle" size={48} color={Colors.light.delayed} />
+            <ThemedText
+              type="body"
+              style={[styles.noStopsText, { color: theme.textSecondary }]}
+            >
+              Unable to load trip details
+            </ThemedText>
+            <Pressable
+              onPress={() => refetch()}
+              style={({ pressed }) => [
+                styles.retryButton,
+                {
+                  backgroundColor: Colors.light.primary,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
+                Retry
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : isLoading ? (
           <SkeletonLoader count={5} />
         ) : data?.stops && data.stops.length > 0 ? (
           <View style={styles.stopsContainer}>
@@ -265,5 +296,11 @@ const styles = StyleSheet.create({
   noStopsText: {
     textAlign: "center",
     marginTop: Spacing.md,
+  },
+  retryButton: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.lg,
   },
 });

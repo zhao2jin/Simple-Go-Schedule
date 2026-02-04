@@ -17,6 +17,7 @@ interface RouteCardProps {
   isReversed: boolean;
   hasAlert?: boolean;
   onPress: () => void;
+  onLongPress?: () => void;
   onDepartureTap?: (tripNumber: string, origin: string, destination: string) => void;
   index: number;
   isLoading?: boolean;
@@ -240,6 +241,8 @@ export function RouteCard({
   departures,
   isReversed,
   hasAlert,
+  onPress,
+  onLongPress,
   onDepartureTap,
   index,
   isLoading,
@@ -266,7 +269,12 @@ export function RouteCard({
 
   const cardContent = (
     <>
-      <View style={styles.routeHeader}>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={500}
+        style={styles.routeHeader}
+      >
         <ThemedText
           type="caption"
           style={[styles.routeText, { color: theme.textSecondary }]}
@@ -285,7 +293,7 @@ export function RouteCard({
         >
           {destination}
         </ThemedText>
-      </View>
+      </Pressable>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>

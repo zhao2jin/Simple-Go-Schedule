@@ -254,18 +254,17 @@ function RouteCardWithData({
   };
 
   return (
-    <Pressable onPress={onPress} onLongPress={handleLongPress} delayLongPress={500}>
-      <RouteCard
-        route={route}
-        departures={data?.departures || []}
-        isReversed={isReversed}
-        hasAlert={data?.alerts && data.alerts.length > 0}
-        onPress={() => {}}
-        onDepartureTap={handleDepartureTap}
-        index={index}
-        isLoading={isLoading}
-      />
-    </Pressable>
+    <RouteCard
+      route={route}
+      departures={data?.departures || []}
+      isReversed={isReversed}
+      hasAlert={data?.alerts && data.alerts.length > 0}
+      onPress={onPress}
+      onLongPress={handleLongPress}
+      onDepartureTap={handleDepartureTap}
+      index={index}
+      isLoading={isLoading}
+    />
   );
 }
 
