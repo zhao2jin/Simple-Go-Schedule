@@ -461,6 +461,30 @@ eas build --profile production --platform ios
    - Verify timezone conversion (Eastern Time)
    - Ensure React Query refetchInterval is active
 
+6. **"Property 'navigation' doesn't exist" error**
+   - **Common Cause**: Using `navigation.navigate()` in a component without importing the hook
+   - **Fix**: Add `const navigation = useNavigation<NavigationProp>()` at the top of the component
+   - **Example**: In nested components like `RouteCardWithData`, always import `useNavigation` if using navigation methods
+   - **Pattern**: Every component that calls `navigation.navigate()` must have its own `useNavigation` hook
+   - **Why**: Navigation context is not automatically inherited - each component needs to explicitly request it
+
+### Common Implementation Mistakes to Avoid
+
+1. **Nested Pressables blocking touch events**
+   - ❌ **Wrong**: Wrapping entire component in Pressable, then having child Pressables
+   - ✅ **Correct**: Only wrap specific interactive elements in Pressable
+   - **Example**: Route cards should have individual Pressables for header (long-press delete) and departures (tap for details), not one outer Pressable
+
+2. **Forgetting useNavigation in child components**
+   - ❌ **Wrong**: Assuming `navigation` is available from parent scope
+   - ✅ **Correct**: Import and use `useNavigation()` in every component that needs navigation
+   - **File**: [client/screens/MyRoutesScreen.tsx](client/screens/MyRoutesScreen.tsx:214)
+
+3. **Trip details API time window too narrow**
+   - ❌ **Wrong**: Only searching current time window for trip details
+   - ✅ **Correct**: Search multiple time windows (current + next 4 hours) to find the trip
+   - **File**: [server/routes.ts](server/routes.ts:290-397)
+
 ---
 
 **Last Updated**: 2026-02-03

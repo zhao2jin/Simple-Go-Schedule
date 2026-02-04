@@ -211,6 +211,7 @@ function RouteCardWithData({
   onDelete: () => void;
   index: number;
 }) {
+  const navigation = useNavigation<NavigationProp>();
   const origin = isReversed ? route.destinationCode : route.originCode;
   const destination = isReversed ? route.originCode : route.destinationCode;
   const originName = isReversed ? route.destinationName : route.originName;
