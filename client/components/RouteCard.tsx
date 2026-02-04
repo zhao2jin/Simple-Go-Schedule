@@ -17,6 +17,7 @@ interface RouteCardProps {
   isReversed: boolean;
   hasAlert?: boolean;
   onPress: () => void;
+  onDepartureTap?: (tripNumber: string, origin: string, destination: string) => void;
   index: number;
   isLoading?: boolean;
 }
@@ -239,6 +240,7 @@ export function RouteCard({
   departures,
   isReversed,
   hasAlert,
+  onDepartureTap,
   index,
   isLoading,
 }: RouteCardProps) {
@@ -248,12 +250,16 @@ export function RouteCard({
 
   const origin = isReversed ? route.destinationName : route.originName;
   const destination = isReversed ? route.originName : route.destinationName;
+  const originCode = isReversed ? route.destinationCode : route.originCode;
+  const destinationCode = isReversed ? route.originCode : route.destinationCode;
 
   const nextSeven = departures.slice(0, 7);
 
   const handleDepartureTap = (dep: Departure) => {
-    if (dep.status !== "on_time") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (onDepartureTap) {
+      onDepartureTap(dep.tripNumber, originCode, destinationCode);
+    } else if (dep.status !== "on_time") {
       setSelectedDeparture(dep);
     }
   };
@@ -291,8 +297,8 @@ export function RouteCard({
             const mins = getMinutesUntil(dep.departureTime);
             const statusLabel = getStatusLabel(dep.status, dep.delay);
             const statusColor = getStatusColor(dep.status);
-            const isTappable = dep.status !== "on_time";
-            
+            const isTappable = onDepartureTap || dep.status !== "on_time";
+
             const rowContent = (
               <View 
                 style={[

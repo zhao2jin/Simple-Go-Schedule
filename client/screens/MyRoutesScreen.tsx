@@ -245,6 +245,14 @@ function RouteCardWithData({
     );
   };
 
+  const handleDepartureTap = (tripNumber: string, origin: string, destination: string) => {
+    navigation.navigate("TripDetail", {
+      tripNumber,
+      origin,
+      destination,
+    });
+  };
+
   return (
     <Pressable onPress={onPress} onLongPress={handleLongPress} delayLongPress={500}>
       <RouteCard
@@ -253,6 +261,7 @@ function RouteCardWithData({
         isReversed={isReversed}
         hasAlert={data?.alerts && data.alerts.length > 0}
         onPress={() => {}}
+        onDepartureTap={handleDepartureTap}
         index={index}
         isLoading={isLoading}
       />

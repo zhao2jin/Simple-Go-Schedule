@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -9,6 +9,7 @@ import type { Departure } from "@shared/types";
 
 interface DepartureRowProps {
   departure: Departure;
+  onPress?: () => void;
 }
 
 function formatTime(timeString: string): string {
@@ -30,7 +31,7 @@ function formatTime(timeString: string): string {
   }
 }
 
-export function DepartureRow({ departure }: DepartureRowProps) {
+export function DepartureRow({ departure, onPress }: DepartureRowProps) {
   const { theme } = useTheme();
 
   const isDelayed = departure.status === "delayed";
@@ -48,7 +49,7 @@ export function DepartureRow({ departure }: DepartureRowProps) {
       ? `Delayed ${departure.delay} min`
       : "On Time";
 
-  return (
+  const content = (
     <View
       style={[
         styles.container,
@@ -114,6 +115,16 @@ export function DepartureRow({ departure }: DepartureRowProps) {
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({

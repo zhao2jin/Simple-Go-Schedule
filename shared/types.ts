@@ -46,3 +46,18 @@ export interface UserPreferences {
   themeMode: 'light' | 'dark' | 'auto';
   notificationsEnabled: boolean;
 }
+
+export interface StopTime {
+  stationCode: string;
+  stationName: string;
+  arrivalTime: string;
+  departureTime: string;
+  platform?: string;
+}
+
+export interface TripDetail {
+  tripNumber: string;
+  line: string;
+  stops: StopTime[];
+  vehicleType: 'train' | 'bus';
+}

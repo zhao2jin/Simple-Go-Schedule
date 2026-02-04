@@ -227,9 +227,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .slice(0, 10);
 
+      // Fetch service alerts and filter by route
+      let relevantAlerts: any[] = [];
+      try {
+        const alertsEndpoint = "/api/V1/ServiceUpdate/ServiceAlert/All";
+        const alertsData = await fetchMetrolinx(alertsEndpoint, apiKey);
+        const messages = alertsData?.Messages || alertsData?.ServiceAlerts?.Messages || [];
+
+        const allAlerts = messages.map((msg: any) => {
+          const affectedLines = msg.AssociatedLines?.map((line: any) => line.LineCode || line.Code || line) ||
+                               msg.Lines?.map((line: any) => line.LineCode || line.Code || line) ||
+                               msg.Routes ||
+                               [];
+
+          let severity: 'info' | 'warning' | 'severe' = 'info';
+          if (msg.Category?.toLowerCase().includes('disruption') ||
+              msg.SubCategory?.toLowerCase().includes('suspension') ||
+              msg.Priority === 'High') {
+            severity = 'severe';
+          } else if (msg.Priority === 'Medium' ||
+                     msg.SubCategory?.toLowerCase().includes('delay')) {
+            severity = 'warning';
+          }
+
+          return {
+            id: msg.Code || msg.MessageId || msg.Id || String(Date.now()),
+            title: msg.SubjectEnglish || msg.Subject || msg.Title || "Service Alert",
+            description: msg.BodyEnglish || msg.Body || msg.Description || "",
+            severity,
+            affectedRoutes: affectedLines,
+          };
+        });
+
+        // Filter alerts relevant to this route (by origin/destination stations or line)
+        const lineCode = getLineForRoute(origin as string, destination as string);
+        relevantAlerts = allAlerts.filter((alert: any) => {
+          if (!alert.affectedRoutes || alert.affectedRoutes.length === 0) {
+            return true; // System-wide alerts
+          }
+          return alert.affectedRoutes.includes(lineCode) ||
+                 alert.affectedRoutes.includes(origin) ||
+                 alert.affectedRoutes.includes(destination);
+        });
+      } catch (alertError) {
+        console.error("Error fetching route alerts:", alertError);
+      }
+
       res.json({
         departures: sortedDepartures,
-        alerts: [],
+        alerts: relevantAlerts,
         lastUpdated: Date.now(),
       });
     } catch (error: any) {
