@@ -2,8 +2,7 @@ import React from "react";
 import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRoute, RouteProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 
@@ -16,14 +15,12 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { JourneyResult } from "@shared/types";
 
 type RouteDetailRouteProp = RouteProp<RootStackParamList, "RouteDetail">;
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function RouteDetailScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<RouteDetailRouteProp>();
-  const navigation = useNavigation<NavigationProp>();
 
   const { origin, destination } = route.params;
 
@@ -124,13 +121,6 @@ export default function RouteDetailScreen() {
             <DepartureRow
               key={`${departure.tripNumber}-${index}`}
               departure={departure}
-              onPress={() => {
-                navigation.navigate("TripDetail", {
-                  tripNumber: departure.tripNumber,
-                  origin: originCode,
-                  destination: destCode,
-                });
-              }}
             />
           ))
         ) : (

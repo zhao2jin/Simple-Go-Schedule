@@ -80,21 +80,6 @@ export default function MyRoutesScreen() {
     await setReversedMode(newValue);
   };
 
-  const handleRoutePress = async (route: SavedRoute) => {
-    await trackUsage();
-    
-    const origin = isReversed ? route.destinationCode : route.originCode;
-    const destination = isReversed ? route.originCode : route.destinationCode;
-    const originName = isReversed ? route.destinationName : route.originName;
-    const destName = isReversed ? route.originName : route.destinationName;
-
-    navigation.navigate("RouteDetail", {
-      routeId: route.id,
-      origin: `${originName}|${origin}`,
-      destination: `${destName}|${destination}`,
-    });
-  };
-
   const handleRouteDelete = () => {
     loadRoutes();
   };
@@ -164,7 +149,6 @@ export default function MyRoutesScreen() {
                 key={route.id}
                 route={route}
                 isReversed={isReversed}
-                onPress={() => handleRoutePress(route)}
                 onDelete={handleRouteDelete}
                 index={index}
               />
@@ -201,17 +185,14 @@ export default function MyRoutesScreen() {
 function RouteCardWithData({
   route,
   isReversed,
-  onPress,
   onDelete,
   index,
 }: {
   route: SavedRoute;
   isReversed: boolean;
-  onPress: () => void;
   onDelete: () => void;
   index: number;
 }) {
-  const navigation = useNavigation<NavigationProp>();
   const origin = isReversed ? route.destinationCode : route.originCode;
   const destination = isReversed ? route.originCode : route.destinationCode;
   const originName = isReversed ? route.destinationName : route.originName;
@@ -246,23 +227,13 @@ function RouteCardWithData({
     );
   };
 
-  const handleDepartureTap = (tripNumber: string, origin: string, destination: string) => {
-    navigation.navigate("TripDetail", {
-      tripNumber,
-      origin,
-      destination,
-    });
-  };
-
   return (
     <RouteCard
       route={route}
       departures={data?.departures || []}
       isReversed={isReversed}
       hasAlert={data?.alerts && data.alerts.length > 0}
-      onPress={onPress}
       onLongPress={handleLongPress}
-      onDepartureTap={handleDepartureTap}
       index={index}
       isLoading={isLoading}
     />

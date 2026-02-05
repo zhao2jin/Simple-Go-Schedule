@@ -16,9 +16,7 @@ interface RouteCardProps {
   departures: Departure[];
   isReversed: boolean;
   hasAlert?: boolean;
-  onPress: () => void;
   onLongPress?: () => void;
-  onDepartureTap?: (tripNumber: string, origin: string, destination: string) => void;
   index: number;
   isLoading?: boolean;
 }
@@ -241,9 +239,7 @@ export function RouteCard({
   departures,
   isReversed,
   hasAlert,
-  onPress,
   onLongPress,
-  onDepartureTap,
   index,
   isLoading,
 }: RouteCardProps) {
@@ -253,16 +249,13 @@ export function RouteCard({
 
   const origin = isReversed ? route.destinationName : route.originName;
   const destination = isReversed ? route.originName : route.destinationName;
-  const originCode = isReversed ? route.destinationCode : route.originCode;
-  const destinationCode = isReversed ? route.originCode : route.destinationCode;
 
-  const nextSeven = departures.slice(0, 7);
+  // Show all remaining departures for the day
+  const allDepartures = departures;
 
   const handleDepartureTap = (dep: Departure) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onDepartureTap) {
-      onDepartureTap(dep.tripNumber, originCode, destinationCode);
-    } else if (dep.status !== "on_time") {
+    if (dep.status !== "on_time") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedDeparture(dep);
     }
   };
@@ -270,7 +263,6 @@ export function RouteCard({
   const cardContent = (
     <>
       <Pressable
-        onPress={onPress}
         onLongPress={onLongPress}
         delayLongPress={500}
         style={styles.routeHeader}
@@ -299,19 +291,19 @@ export function RouteCard({
         <View style={styles.loadingContainer}>
           <View style={[styles.skeleton, { backgroundColor: theme.backgroundSecondary }]} />
         </View>
-      ) : nextSeven.length > 0 ? (
+      ) : allDepartures.length > 0 ? (
         <View style={styles.departuresContainer}>
-          {nextSeven.map((dep, i) => {
+          {allDepartures.map((dep, i) => {
             const mins = getMinutesUntil(dep.departureTime);
             const statusLabel = getStatusLabel(dep.status, dep.delay);
             const statusColor = getStatusColor(dep.status);
-            const isTappable = onDepartureTap || dep.status !== "on_time";
+            const isTappable = dep.status !== "on_time";
 
             const rowContent = (
-              <View 
+              <View
                 style={[
                   styles.departureRow,
-                  i < nextSeven.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                  i < allDepartures.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
                 ]}
               >
                 <View style={styles.timeSection}>

@@ -120,7 +120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timeStr = `${hours}${minutes}`;
       const localDateStr = `${year}-${month}-${day}`;
       
-      const journeyEndpoint = `/api/V1/Schedule/Journey/${dateStr}/${origin}/${destination}/${timeStr}/10`;
+      // Fetch up to 50 journeys to get all remaining departures for the day
+      const journeyEndpoint = `/api/V1/Schedule/Journey/${dateStr}/${origin}/${destination}/${timeStr}/50`;
       const journeyData = await fetchMetrolinx(journeyEndpoint, apiKey);
       
       const journeys = journeyData?.SchJourneys || [];
@@ -218,14 +219,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch {}
       }
       
+      // Return all departures for the day (no limit)
       const sortedDepartures = realTimeDepartures
         .filter((d: any) => d.departureTime)
         .sort((a: any, b: any) => {
           const timeA = new Date(a.departureTime.replace(" ", "T")).getTime();
           const timeB = new Date(b.departureTime.replace(" ", "T")).getTime();
           return timeA - timeB;
-        })
-        .slice(0, 10);
+        });
 
       // Fetch service alerts and filter by route
       let relevantAlerts: any[] = [];
@@ -281,103 +282,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching journey:", error.message);
       res.status(500).json({ error: "Failed to fetch journey data", departures: [], alerts: [] });
-    }
-  });
-
-  app.get("/api/trip/:tripNumber", async (req, res) => {
-    if (!apiKey) {
-      return res.status(500).json({ error: "API key not configured" });
-    }
-    const { tripNumber } = req.params;
-    const { origin, destination, date } = req.query;
-
-    if (!tripNumber || !origin || !destination) {
-      return res.status(400).json({ error: "Trip number, origin, and destination required" });
-    }
-
-    try {
-      // Use Eastern Time (Toronto) for API queries
-      const now = new Date();
-      const torontoFormatter = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/Toronto",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-      });
-      const parts = torontoFormatter.formatToParts(now);
-      const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
-      const year = getPart("year");
-      const month = getPart("month");
-      const day = getPart("day");
-      const hours = getPart("hour");
-      const minutes = getPart("minute");
-      const dateStr = date || `${year}${month}${day}`;
-      const timeStr = `${hours}${minutes}`;
-
-      console.log(`Fetching trip ${tripNumber} from ${origin} to ${destination} at ${dateStr} ${timeStr}`);
-
-      // Try multiple time windows to find the trip (current + next 4 hours)
-      const timeWindows = [timeStr];
-      const currentHour = parseInt(hours, 10);
-      for (let i = 1; i <= 4; i++) {
-        const nextHour = (currentHour + i) % 24;
-        const hourStr = nextHour.toString().padStart(2, '0');
-        timeWindows.push(`${hourStr}00`);
-      }
-
-      for (const searchTime of timeWindows) {
-        const journeyEndpoint = `/api/V1/Schedule/Journey/${dateStr}/${origin}/${destination}/${searchTime}/10`;
-        console.log(`Searching for trip at time window: ${searchTime}`);
-
-        try {
-          const journeyData = await fetchMetrolinx(journeyEndpoint, apiKey);
-          const journeys = journeyData?.SchJourneys || [];
-
-          // Find the specific trip
-          for (const journey of journeys) {
-            const services = journey?.Services || [];
-            for (const service of services) {
-              const trips = service?.Trips?.Trip || [];
-              const tripArray = Array.isArray(trips) ? trips : [trips];
-
-              for (const trip of tripArray) {
-                if (!trip || trip.Number !== tripNumber) continue;
-
-                console.log(`Found trip ${tripNumber}!`);
-                const stops = trip.Stops?.Stop || [];
-                const stopsArray = Array.isArray(stops) ? stops : [stops];
-
-                const stopTimes = stopsArray.map((stop: any) => ({
-                  stationCode: stop.Code || "",
-                  stationName: stop.Name || "",
-                  arrivalTime: stop.ArrivalTime || "",
-                  departureTime: stop.DepartureTime || "",
-                  platform: stop.Platform || undefined,
-                }));
-
-                return res.json({
-                  tripNumber,
-                  line: trip.Display || trip.Line || "",
-                  stops: stopTimes,
-                  vehicleType: trip.Type === "T" ? "train" : trip.Type === "B" ? "bus" : "train",
-                });
-              }
-            }
-          }
-        } catch (windowError) {
-          console.log(`No results in time window ${searchTime}:`, windowError);
-          continue;
-        }
-      }
-
-      console.error(`Trip ${tripNumber} not found in any time window`);
-      res.status(404).json({ error: "Trip not found in schedule" });
-    } catch (error: any) {
-      console.error("Error fetching trip details:", error.message, error.stack);
-      res.status(500).json({ error: "Failed to fetch trip details", details: error.message });
     }
   });
 

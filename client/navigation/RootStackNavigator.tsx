@@ -2,18 +2,12 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
 import RouteDetailScreen from "@/screens/RouteDetailScreen";
-import TripDetailScreen from "@/screens/TripDetailScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type RootStackParamList = {
   Main: undefined;
   RouteDetail: {
     routeId: string;
-    origin: string;
-    destination: string;
-  };
-  TripDetail: {
-    tripNumber: string;
     origin: string;
     destination: string;
   };
@@ -37,14 +31,6 @@ export default function RootStackNavigator() {
         options={{
           presentation: "modal",
           headerTitle: "Route Details",
-        }}
-      />
-      <Stack.Screen
-        name="TripDetail"
-        component={TripDetailScreen}
-        options={{
-          presentation: "modal",
-          headerTitle: "Trip Details",
         }}
       />
     </Stack.Navigator>
