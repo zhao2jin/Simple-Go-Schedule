@@ -57,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/stations", async (req, res) => {
     if (!apiKey) {
+      console.error("[stations] METROLINX_API_KEY not configured");
       return res.status(500).json({ error: "API key not configured" });
     }
     try {
@@ -82,10 +83,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         longitude: stop.Longitude || stop.StopLongitude,
       }));
 
+      console.log(`[stations] Returning ${stations.length} stations`);
       res.json({ stations });
     } catch (error: any) {
-      console.error("Error fetching stations:", error.message);
-      res.status(500).json({ error: "Failed to fetch stations" });
+      console.error("[stations] Error fetching stations:", error.message);
+      res.status(500).json({ error: "Failed to fetch stations", details: error.message });
     }
   });
 
