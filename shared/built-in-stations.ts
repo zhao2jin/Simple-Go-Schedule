@@ -1,4 +1,4 @@
-import type { Station } from "@shared/types";
+import type { Station } from "./types";
 
 export const BUILT_IN_STATIONS: Station[] = [
   { code: "AC", name: "Acton GO", locationName: "Acton GO" },

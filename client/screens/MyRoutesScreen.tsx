@@ -205,8 +205,7 @@ function RouteCardWithData({
   const { data, isLoading } = useQuery<JourneyResult>({
     queryKey: ["/api/journey", `origin=${origin}`, `destination=${destination}`],
     queryFn: async () => {
-      const params = new URLSearchParams({ origin, destination });
-      const response = await fetch(`${API_URL}/api/journey?${params}`);
+      const response = await fetch(`${API_URL}/api/journey?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }

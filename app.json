@@ -14,14 +14,7 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": false,
-          "NSExceptionDomains": {
-            "api.metrolinx.com": {
-              "NSExceptionAllowsInsecureHTTPLoads": false,
-              "NSExceptionRequiresForwardSecrecy": true,
-              "NSIncludesSubdomains": true
-            }
-          }
+          "NSAllowsArbitraryLoads": true
         }
       }
     },
@@ -55,7 +48,7 @@
       "expo-web-browser"
     ],
     "experiments": {
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "extra": {
       "eas": {
