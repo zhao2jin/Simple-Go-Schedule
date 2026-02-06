@@ -61,8 +61,7 @@ export const getQueryFn: <T>(options: {
 
     if (!res.ok) {
       const text = await res.text();
-      console.warn(`API error: ${res.status} - ${text}`);
-      return { departures: [], alerts: [], stations: [] };
+      throw new Error(`${res.status}: ${text || res.statusText}`);
     }
 
     return await res.json();

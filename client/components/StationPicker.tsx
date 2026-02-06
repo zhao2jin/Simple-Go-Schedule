@@ -25,6 +25,9 @@ interface StationPickerProps {
   placeholder?: string;
   testID?: string;
   defaultLine?: GoLine;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
 export function StationPicker({
@@ -35,6 +38,9 @@ export function StationPicker({
   placeholder = "Select station",
   testID,
   defaultLine,
+  isLoading,
+  isError,
+  onRetry,
 }: StationPickerProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -213,9 +219,34 @@ export function StationPicker({
                 )}
                 ListEmptyComponent={
                   <View style={styles.emptyList}>
-                    <ThemedText style={{ color: theme.textSecondary }}>
-                      No stations found
-                    </ThemedText>
+                    {isLoading ? (
+                      <ThemedText style={{ color: theme.textSecondary }}>
+                        Loading stations...
+                      </ThemedText>
+                    ) : isError ? (
+                      <>
+                        <Feather name="alert-circle" size={32} color={theme.textSecondary} style={{ marginBottom: Spacing.md }} />
+                        <ThemedText style={{ color: theme.textSecondary, textAlign: "center", marginBottom: Spacing.lg }}>
+                          Could not load stations. Check your connection and try again.
+                        </ThemedText>
+                        {onRetry ? (
+                          <Pressable
+                            testID={`${testID}-retry-button`}
+                            onPress={onRetry}
+                            style={[styles.retryButton, { backgroundColor: Colors.light.primary }]}
+                          >
+                            <Feather name="refresh-cw" size={16} color="#fff" />
+                            <ThemedText style={{ color: "#fff", fontWeight: "600", marginLeft: Spacing.sm }}>
+                              Retry
+                            </ThemedText>
+                          </Pressable>
+                        ) : null}
+                      </>
+                    ) : (
+                      <ThemedText style={{ color: theme.textSecondary }}>
+                        No stations found
+                      </ThemedText>
+                    )}
                   </View>
                 }
               />
@@ -343,5 +374,12 @@ const styles = StyleSheet.create({
   emptyList: {
     padding: Spacing["2xl"],
     alignItems: "center",
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.sm,
   },
 });

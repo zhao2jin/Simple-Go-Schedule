@@ -29,11 +29,18 @@ export default function AddRouteScreen() {
   const [destination, setDestination] = useState<Station | undefined>();
   const [isSaving, setIsSaving] = useState(false);
 
-  const { data: stationsData, isLoading: isLoadingStations } = useQuery<{
+  const {
+    data: stationsData,
+    isLoading: isLoadingStations,
+    isError: isStationsError,
+    error: stationsError,
+    refetch: refetchStations,
+  } = useQuery<{
     stations: Station[];
   }>({
     queryKey: ["/api/stations"],
     staleTime: 1000 * 60 * 60,
+    retry: 2,
   });
 
   const stations = stationsData?.stations || [];
@@ -116,6 +123,9 @@ export default function AddRouteScreen() {
           onSelect={setOrigin}
           placeholder={isLoadingStations ? "Loading stations..." : "Select origin station"}
           testID="picker-origin-station"
+          isLoading={isLoadingStations}
+          isError={isStationsError}
+          onRetry={() => refetchStations()}
         />
 
         <StationPicker
@@ -126,6 +136,9 @@ export default function AddRouteScreen() {
           placeholder={isLoadingStations ? "Loading stations..." : "Select destination station"}
           testID="picker-destination-station"
           defaultLine={origin ? getLineForStation(origin.code) : undefined}
+          isLoading={isLoadingStations}
+          isError={isStationsError}
+          onRetry={() => refetchStations()}
         />
       </View>
 
