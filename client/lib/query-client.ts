@@ -1,15 +1,20 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import Constants from "expo-constants";
+
+const PRODUCTION_API_URL = "https://transit-watch--7pt4dmysby.replit.app";
 
 export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
-
-  if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
+  const host = process.env.EXPO_PUBLIC_DOMAIN;
+  if (host) {
+    return new URL(`https://${host}`).href;
   }
 
-  let url = new URL(`https://${host}`);
+  const configUrl = Constants.expoConfig?.extra?.apiUrl;
+  if (configUrl) {
+    return configUrl;
+  }
 
-  return url.href;
+  return PRODUCTION_API_URL;
 }
 
 async function throwIfResNotOk(res: Response) {
