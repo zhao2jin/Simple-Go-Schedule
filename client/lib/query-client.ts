@@ -1,20 +1,40 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import Constants from "expo-constants";
 
 const PRODUCTION_API_URL = "https://transit-watch--7pt4dmysby.replit.app";
 
-export function getApiUrl(): string {
-  const host = process.env.EXPO_PUBLIC_DOMAIN;
-  if (host) {
-    return new URL(`https://${host}`).href;
-  }
+function resolveApiBase(): string {
+  try {
+    const host = process.env.EXPO_PUBLIC_DOMAIN;
+    if (host && host.length > 0) {
+      const cleanHost = host.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+      return `https://${cleanHost}`;
+    }
+  } catch {}
 
-  const configUrl = Constants.expoConfig?.extra?.apiUrl;
-  if (configUrl) {
-    return configUrl;
-  }
+  try {
+    const Constants = require("expo-constants").default;
+    const configUrl = Constants?.expoConfig?.extra?.apiUrl;
+    if (configUrl && typeof configUrl === "string" && configUrl.length > 0) {
+      return configUrl.replace(/\/+$/, "");
+    }
+  } catch {}
 
   return PRODUCTION_API_URL;
+}
+
+let _cachedApiUrl: string | null = null;
+
+export function getApiUrl(): string {
+  if (!_cachedApiUrl) {
+    _cachedApiUrl = resolveApiBase();
+  }
+  return _cachedApiUrl;
+}
+
+function buildUrl(base: string, path: string): string {
+  const cleanBase = base.replace(/\/+$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
 }
 
 async function throwIfResNotOk(res: Response) {
@@ -29,14 +49,12 @@ export async function apiRequest(
   route: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const baseUrl = getApiUrl();
-  const url = new URL(route, baseUrl);
+  const url = buildUrl(getApiUrl(), route);
 
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
   });
 
   await throwIfResNotOk(res);
@@ -50,15 +68,13 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const baseUrl = getApiUrl();
+    const base = getApiUrl();
     const path = queryKey[0] as string;
     const params = queryKey.slice(1).join("&");
     const fullPath = params ? `${path}?${params}` : path;
-    const url = new URL(fullPath, baseUrl);
+    const url = buildUrl(base, fullPath);
 
-    const res = await fetch(url, {
-      credentials: "include",
-    });
+    const res = await fetch(url);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;

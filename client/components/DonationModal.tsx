@@ -17,7 +17,7 @@ import * as WebBrowser from "expo-web-browser";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
-import { getApiUrl } from "@/lib/query-client";
+import { buildApiUrl } from "@/lib/config";
 
 interface DonationModalProps {
   visible: boolean;
@@ -58,7 +58,7 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
 
   const fetchPrices = async () => {
     try {
-      const response = await fetch(new URL("/api/donation/prices", getApiUrl()).toString());
+      const response = await fetch(buildApiUrl("/api/donation/prices"));
       const data = await response.json();
       if (data.prices && data.prices.length > 0) {
         setPrices(data.prices);
@@ -100,7 +100,7 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
         ? { customAmount: Math.round(parseFloat(customAmount) * 100) }
         : { priceId: selectedPrice };
 
-      const response = await fetch(new URL("/api/donation/checkout", getApiUrl()).toString(), {
+      const response = await fetch(buildApiUrl("/api/donation/checkout"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
