@@ -14,11 +14,17 @@
       "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "API_URL": "https://your-backend-url.com"
       }
     },
     "production": {
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "env": {
+        "API_URL": "https://your-backend-url.com"
       }
     }
   },

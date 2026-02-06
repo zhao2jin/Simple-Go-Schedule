@@ -60,7 +60,8 @@
     "extra": {
       "eas": {
         "projectId": ""
-      }
+      },
+      "apiUrl": ""
     },
     "owner": ""
   }

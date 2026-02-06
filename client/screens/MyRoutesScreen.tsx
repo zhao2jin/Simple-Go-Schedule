@@ -19,6 +19,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useDonation } from "@/hooks/useDonation";
 import { Spacing } from "@/constants/theme";
 import { getSavedRoutes, getReversedMode, setReversedMode, deleteRoute } from "@/lib/storage";
+import { API_URL } from "@/lib/config";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import type { SavedRoute, JourneyResult, ServiceAlert } from "@shared/types";
@@ -43,7 +44,10 @@ export default function MyRoutesScreen() {
   const { data: alertsData } = useQuery<{ alerts: ServiceAlert[] }>({
     queryKey: ["/api/alerts"],
     queryFn: async () => {
-      const response = await fetch("/api/alerts");
+      const response = await fetch(`${API_URL}/api/alerts`);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
       return response.json();
     },
     refetchInterval: 60000, // Refresh every 60 seconds
@@ -200,6 +204,14 @@ function RouteCardWithData({
 
   const { data, isLoading } = useQuery<JourneyResult>({
     queryKey: ["/api/journey", `origin=${origin}`, `destination=${destination}`],
+    queryFn: async () => {
+      const params = new URLSearchParams({ origin, destination });
+      const response = await fetch(`${API_URL}/api/journey?${params}`);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      return response.json();
+    },
     refetchInterval: 60000,
     staleTime: 30000,
   });
