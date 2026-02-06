@@ -16,7 +16,7 @@
         "simulator": false
       },
       "env": {
-        "API_URL": "https://your-backend-url.com"
+        "EXPO_PUBLIC_DOMAIN": "transit-watch--7pt4dmysby.replit.app"
       }
     },
     "production": {
@@ -24,7 +24,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "API_URL": "https://your-backend-url.com"
+        "EXPO_PUBLIC_DOMAIN": "transit-watch--7pt4dmysby.replit.app"
       }
     }
   },

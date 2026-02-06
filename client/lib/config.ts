@@ -17,8 +17,7 @@ const getApiUrl = () => {
     return ''; // Relative URLs work in development
   }
 
-  // REPLACE THIS WITH YOUR PRODUCTION SERVER URL
-  return 'https://your-backend-url.com'; // TODO: Update this!
+  return 'https://transit-watch--7pt4dmysby.replit.app';
 };
 
 export const API_URL = getApiUrl();
