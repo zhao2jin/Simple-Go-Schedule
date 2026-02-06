@@ -17,6 +17,7 @@ import { saveRoute } from "@/lib/storage";
 import type { Station, SavedRoute } from "@shared/types";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import { getLineForStation } from "@shared/lines";
+import { BUILT_IN_STATIONS } from "@shared/built-in-stations";
 
 export default function AddRouteScreen() {
   const insets = useSafeAreaInsets();
@@ -43,7 +44,8 @@ export default function AddRouteScreen() {
     retry: 2,
   });
 
-  const stations = stationsData?.stations || [];
+  const apiStations = stationsData?.stations || [];
+  const stations = apiStations.length > 0 ? apiStations : BUILT_IN_STATIONS;
 
   const handleSave = async () => {
     if (!origin || !destination) {
