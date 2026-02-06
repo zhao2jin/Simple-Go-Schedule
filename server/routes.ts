@@ -235,7 +235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const alertsEndpoint = "/api/V1/ServiceUpdate/ServiceAlert/All";
         const alertsData = await fetchMetrolinx(alertsEndpoint, apiKey);
-        const messages = alertsData?.Messages || alertsData?.ServiceAlerts?.Messages || [];
+        const rawMessages = alertsData?.Messages || alertsData?.ServiceAlerts?.Messages || [];
+        const messages = Array.isArray(rawMessages) ? rawMessages : [];
 
         const allAlerts = messages.map((msg: any) => {
           const affectedLines = msg.AssociatedLines?.map((line: any) => line.LineCode || line.Code || line) ||
@@ -349,7 +350,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endpoint = "/api/V1/ServiceUpdate/ServiceAlert/All";
       const data = await fetchMetrolinx(endpoint, apiKey);
 
-      const messages = data?.Messages || data?.ServiceAlerts?.Messages || [];
+      const rawMessages = data?.Messages || data?.ServiceAlerts?.Messages || [];
+      const messages = Array.isArray(rawMessages) ? rawMessages : [];
       const alerts = messages.map((msg: any) => {
         // Extract affected line codes from AssociatedLines or Lines array
         const affectedLines = msg.AssociatedLines?.map((line: any) => line.LineCode || line.Code || line) ||
