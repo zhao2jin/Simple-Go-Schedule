@@ -5,17 +5,19 @@ const PRODUCTION_API_URL = "https://transit-watch--7pt4dmysby.replit.app";
 function resolveApiBase(): string {
   try {
     const host = process.env.EXPO_PUBLIC_DOMAIN;
-    if (host && host.length > 0) {
+    if (host && typeof host === "string" && host.length > 0) {
       const cleanHost = host.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-      return `https://${cleanHost}`;
+      return "https://" + cleanHost;
     }
   } catch {}
 
   try {
     const Constants = require("expo-constants").default;
-    const configUrl = Constants?.expoConfig?.extra?.apiUrl;
-    if (configUrl && typeof configUrl === "string" && configUrl.length > 0) {
-      return configUrl.replace(/\/+$/, "");
+    const extra = Constants?.expoConfig?.extra
+      || Constants?.manifest?.extra
+      || Constants?.manifest2?.extra;
+    if (extra && extra.apiUrl && typeof extra.apiUrl === "string") {
+      return extra.apiUrl.replace(/\/+$/, "");
     }
   } catch {}
 

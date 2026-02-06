@@ -58,14 +58,15 @@ export function DonationModal({ visible, onClose, onDonated }: DonationModalProp
 
   const fetchPrices = async () => {
     try {
-      const response = await fetch(buildApiUrl("/api/donation/prices"));
+      const url = buildApiUrl("/api/donation/prices");
+      const response = await fetch(url);
+      if (!response.ok) return;
       const data = await response.json();
-      if (data.prices && data.prices.length > 0) {
+      if (data && data.prices && data.prices.length > 0) {
         setPrices(data.prices);
         setSelectedPrice(data.prices[0].id);
       }
-    } catch (error) {
-      console.error("Failed to fetch donation prices:", error);
+    } catch {
     }
   };
 

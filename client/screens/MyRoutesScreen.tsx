@@ -44,14 +44,19 @@ export default function MyRoutesScreen() {
   const { data: alertsData } = useQuery<{ alerts: ServiceAlert[] }>({
     queryKey: ["/api/alerts"],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/alerts`);
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      try {
+        const response = await fetch(`${API_URL}/api/alerts`);
+        if (!response.ok) {
+          return { alerts: [] };
+        }
+        const data = await response.json();
+        return data || { alerts: [] };
+      } catch {
+        return { alerts: [] };
       }
-      return response.json();
     },
-    refetchInterval: 60000, // Refresh every 60 seconds
-    staleTime: 30000, // Consider data stale after 30 seconds
+    refetchInterval: 60000,
+    staleTime: 30000,
   });
 
   const loadRoutes = useCallback(async () => {
@@ -205,11 +210,16 @@ function RouteCardWithData({
   const { data, isLoading } = useQuery<JourneyResult>({
     queryKey: ["/api/journey", `origin=${origin}`, `destination=${destination}`],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/journey?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      try {
+        const response = await fetch(`${API_URL}/api/journey?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
+        if (!response.ok) {
+          return { departures: [], alerts: [] };
+        }
+        const data = await response.json();
+        return data || { departures: [], alerts: [] };
+      } catch {
+        return { departures: [], alerts: [] };
       }
-      return response.json();
     },
     refetchInterval: 60000,
     staleTime: 30000,
