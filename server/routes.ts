@@ -202,6 +202,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Filter NextService lines: keep only departures heading toward the destination
       const destName = STATION_NAMES[destination as string] || (destination as string);
+      // DEBUG: Log raw NextService data
+      for (const l of rawLines.slice(0, 10)) {
+        console.log(`[DEBUG-NS] Trip=${l.TripNumber} Line=${l.LineCode} Dir="${l.DirectionName}" Plat=${l.ScheduledPlatform||''} Time=${l.ScheduledDepartureTime}`);
+      }
       const filteredRealTime = rawLines.filter((line: any) => {
         const dirName = (line.DirectionName || "").trim();
         const lineCode = (line.LineCode || "").trim();
