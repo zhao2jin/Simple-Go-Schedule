@@ -128,6 +128,7 @@ export default function AddRouteScreen() {
           isLoading={isLoadingStations}
           isError={isStationsError}
           onRetry={() => refetchStations()}
+          reverseGeoOrder
         />
 
         <StationPicker

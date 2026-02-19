@@ -30,6 +30,7 @@ interface StationPickerProps {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  reverseGeoOrder?: boolean;
 }
 
 export function StationPicker({
@@ -43,6 +44,7 @@ export function StationPicker({
   isLoading,
   isError,
   onRetry,
+  reverseGeoOrder = false,
 }: StationPickerProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -57,12 +59,13 @@ export function StationPicker({
     if (sortMode === "alphabetical") {
       return [...lineStations].sort((a, b) => a.name.localeCompare(b.name));
     }
-    return [...lineStations].sort((a, b) => {
+    const sorted = [...lineStations].sort((a, b) => {
       const idxA = selectedLine.stationCodes.indexOf(a.code);
       const idxB = selectedLine.stationCodes.indexOf(b.code);
       return idxA - idxB;
     });
-  }, [selectedLine, stations, sortMode]);
+    return reverseGeoOrder ? sorted.reverse() : sorted;
+  }, [selectedLine, stations, sortMode, reverseGeoOrder]);
 
   const filteredStations = useMemo(() => {
     if (!searchQuery.trim()) return stationsForLine;
