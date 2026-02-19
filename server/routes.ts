@@ -24,13 +24,13 @@ async function fetchMetrolinx(endpoint: string, apiKey: string) {
 }
 
 const LINE_DESTINATIONS: Record<string, string[]> = {
-  "LW": ["AL", "BU", "AP", "BO", "OA", "CL", "PO", "LO", "MI", "EX", "UN", "HA", "WR", "SCTH", "NI"],
-  "LE": ["OS", "WH", "AJ", "PIN", "RO", "GU", "EG", "SC", "DA", "UN"],
-  "ML": ["ML", "LS", "ME", "SR", "ER", "CO", "DI", "KP", "UN"],
-  "GT": ["KI", "GL", "AC", "GE", "MO", "BR", "BE", "MA", "ET", "WE", "BL", "UN"],
-  "BA": ["BA", "AD", "BD", "EA", "NE", "AU", "KC", "MP", "RU", "DW", "UN"],
-  "RH": ["RI", "BM", "GO", "LA", "OL", "OR", "UN"],
-  "ST": ["LI", "ST", "MJ", "MR", "CE", "UI", "MK", "AG", "KE", "UN"],
+  "LW": ["NI", "SCTH", "WR", "HA", "AL", "BU", "AP", "BO", "OA", "CL", "PO", "LO", "MI", "EX", "UN"],
+  "LE": ["UN", "DA", "SC", "EG", "GU", "RO", "PIN", "AJ", "WH", "OS"],
+  "ML": ["UN", "KP", "DI", "CO", "ER", "SR", "ME", "LS", "ML"],
+  "GT": ["UN", "BL", "WE", "ET", "MA", "BE", "BR", "MO", "GE", "AC", "GL", "KI"],
+  "BA": ["UN", "DW", "RU", "MP", "KC", "AU", "NE", "EA", "BD", "AD", "BA"],
+  "RH": ["UN", "OR", "OL", "LA", "GO", "BM", "RI"],
+  "ST": ["UN", "KE", "AG", "MK", "UI", "CE", "MR", "MJ", "ST", "LI"],
 };
 
 const TRAIN_LINE_CODES = ["LW", "LE", "ML", "GT", "BA", "RH", "ST", "KI"];
@@ -202,31 +202,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Filter NextService lines: keep only departures heading toward the destination
       const destName = STATION_NAMES[destination as string] || (destination as string);
-      // DEBUG: Log raw NextService data
-      for (const l of rawLines.slice(0, 10)) {
-        console.log(`[DEBUG-NS] Trip=${l.TripNumber} Line=${l.LineCode} Dir="${l.DirectionName}" Plat=${l.ScheduledPlatform||''} Time=${l.ScheduledDepartureTime}`);
-      }
       const filteredRealTime = rawLines.filter((line: any) => {
         const dirName = (line.DirectionName || "").trim();
         const lineCode = (line.LineCode || "").trim();
 
-        // Must be on a line that serves both origin and destination
         if (routeLineCode && lineCode !== routeLineCode) return false;
 
-        // Check if the direction name mentions the destination or a station past the destination
-        if (dirName.toLowerCase().includes(destName.toLowerCase())) return true;
-        if (dirName.toLowerCase().includes("union") && destination === "UN") return true;
-
-        // For trips heading toward Union, check if destination is between origin and Union
-        if (destination === "UN" && dirName.toLowerCase().includes("union")) return true;
-
-        // Check if the destination is on the route toward the terminal
-        // Extract terminal station from DirectionName (format: "LE - Durham College Oshawa GO")
-        const terminalPart = dirName.split(" - ").slice(1).join(" - ").trim();
-        if (!terminalPart) return false;
-
-        // Check if both the destination and the terminal are on the same line
-        // and the train passes through the destination on its way
         const lineStations = LINE_DESTINATIONS[lineCode] || [];
         if (lineStations.length === 0) return false;
 
@@ -234,8 +215,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const destIdx = lineStations.indexOf(destination as string);
         if (originIdx === -1 || destIdx === -1) return false;
 
-        // Find which direction the train is going based on terminal
-        // The terminal station name should match one end of the line
+        const terminalPart = dirName.split(" - ").slice(1).join(" - ").trim();
+        if (!terminalPart) return false;
+
         const terminalLower = terminalPart.toLowerCase();
         let terminalIdx = -1;
         for (let i = 0; i < lineStations.length; i++) {
@@ -247,10 +229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (terminalIdx === -1) return false;
 
-        // Train goes from origin toward terminal
-        // Destination must be between origin and terminal (inclusive)
-        if (originIdx < destIdx && destIdx <= terminalIdx) return true;
-        if (originIdx > destIdx && destIdx >= terminalIdx) return true;
+        if (originIdx < destIdx && terminalIdx >= destIdx) return true;
+        if (originIdx > destIdx && terminalIdx <= destIdx) return true;
 
         return false;
       });
