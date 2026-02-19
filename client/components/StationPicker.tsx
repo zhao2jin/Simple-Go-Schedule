@@ -17,6 +17,8 @@ import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import { GO_LINES, type GoLine } from "@shared/lines";
 import type { Station } from "@shared/types";
 
+type SortMode = "geographic" | "alphabetical";
+
 interface StationPickerProps {
   label: string;
   value?: Station;
@@ -47,11 +49,20 @@ export function StationPicker({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLine, setSelectedLine] = useState<GoLine | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("geographic");
 
   const stationsForLine = useMemo(() => {
     if (!selectedLine) return [];
-    return stations.filter((s) => selectedLine.stationCodes.includes(s.code));
-  }, [selectedLine, stations]);
+    const lineStations = stations.filter((s) => selectedLine.stationCodes.includes(s.code));
+    if (sortMode === "alphabetical") {
+      return [...lineStations].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return [...lineStations].sort((a, b) => {
+      const idxA = selectedLine.stationCodes.indexOf(a.code);
+      const idxB = selectedLine.stationCodes.indexOf(b.code);
+      return idxA - idxB;
+    });
+  }, [selectedLine, stations, sortMode]);
 
   const filteredStations = useMemo(() => {
     if (!searchQuery.trim()) return stationsForLine;
@@ -95,6 +106,11 @@ export function StationPicker({
     setIsOpen(false);
     setSelectedLine(null);
     setSearchQuery("");
+  };
+
+  const toggleSortMode = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSortMode((prev) => (prev === "geographic" ? "alphabetical" : "geographic"));
   };
 
   return (
@@ -152,40 +168,64 @@ export function StationPicker({
             <>
               <View style={styles.lineHeaderContainer}>
                 <View style={[styles.lineIndicator, { backgroundColor: selectedLine.color }]} />
-                <ThemedText type="h4">{selectedLine.name}</ThemedText>
+                <ThemedText type="h4" style={{ flex: 1 }}>{selectedLine.name}</ThemedText>
               </View>
-              <View
-                style={[
-                  styles.searchContainer,
-                  {
-                    backgroundColor: theme.backgroundDefault,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <Feather name="search" size={18} color={theme.textSecondary} />
-                <TextInput
-                  testID={`${testID}-search-input`}
-                  style={[styles.searchInput, { color: theme.text }]}
-                  placeholder="Search stations..."
-                  placeholderTextColor={theme.textSecondary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {searchQuery.length > 0 ? (
-                  <Pressable testID={`${testID}-clear-search`} onPress={() => setSearchQuery("")}>
-                    <Feather name="x-circle" size={18} color={theme.textSecondary} />
-                  </Pressable>
-                ) : null}
+              <View style={styles.sortAndSearchRow}>
+                <View
+                  style={[
+                    styles.searchContainer,
+                    {
+                      backgroundColor: theme.backgroundDefault,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <Feather name="search" size={18} color={theme.textSecondary} />
+                  <TextInput
+                    testID={`${testID}-search-input`}
+                    style={[styles.searchInput, { color: theme.text }]}
+                    placeholder="Search stations..."
+                    placeholderTextColor={theme.textSecondary}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {searchQuery.length > 0 ? (
+                    <Pressable testID={`${testID}-clear-search`} onPress={() => setSearchQuery("")}>
+                      <Feather name="x-circle" size={18} color={theme.textSecondary} />
+                    </Pressable>
+                  ) : null}
+                </View>
+                <Pressable
+                  testID={`${testID}-sort-toggle`}
+                  onPress={toggleSortMode}
+                  style={[
+                    styles.sortButton,
+                    {
+                      backgroundColor: theme.backgroundDefault,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <Feather
+                    name={sortMode === "geographic" ? "map-pin" : "type"}
+                    size={18}
+                    color={Colors.light.primary}
+                  />
+                </Pressable>
+              </View>
+              <View style={styles.sortLabelRow}>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {sortMode === "geographic" ? "Sorted by line order" : "Sorted A\u2013Z"}
+                </ThemedText>
               </View>
 
               <FlatList
                 data={filteredStations}
                 keyExtractor={(item) => item.code}
                 contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                   <Pressable
                     testID={`${testID}-station-${item.code}`}
                     onPress={() => handleSelectStation(item)}
@@ -198,6 +238,13 @@ export function StationPicker({
                       },
                     ]}
                   >
+                    {sortMode === "geographic" ? (
+                      <View style={styles.geoIndicatorContainer}>
+                        <View style={[styles.geoLine, index === 0 && styles.geoLineFirst, { backgroundColor: selectedLine.color }]} />
+                        <View style={[styles.geoDot, { borderColor: selectedLine.color }]} />
+                        <View style={[styles.geoLine, index === filteredStations.length - 1 && styles.geoLineLast, { backgroundColor: selectedLine.color }]} />
+                      </View>
+                    ) : null}
                     <View style={styles.stationInfo}>
                       <ThemedText type="body">{item.name}</ThemedText>
                       {item.locationName ? (
@@ -331,11 +378,17 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 2,
   },
-  searchContainer: {
+  sortAndSearchRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xs,
+    gap: Spacing.sm,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.sm,
@@ -345,6 +398,40 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+  },
+  sortButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sortLabelRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
+  geoIndicatorContainer: {
+    width: 20,
+    alignItems: "center",
+    marginRight: Spacing.md,
+  },
+  geoLine: {
+    width: 2,
+    flex: 1,
+  },
+  geoLineFirst: {
+    opacity: 0,
+  },
+  geoLineLast: {
+    opacity: 0,
+  },
+  geoDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    backgroundColor: "transparent",
   },
   lineItem: {
     flexDirection: "row",
@@ -367,6 +454,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
+    minHeight: 56,
   },
   stationInfo: {
     flex: 1,
