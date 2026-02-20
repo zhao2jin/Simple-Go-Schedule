@@ -285,9 +285,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Deduplicate by departure minute + line
+      const deduped = new Map<string, any>();
+      for (const dep of mergedDepartures) {
+        if (!dep.departureTime) continue;
+        const depDate = new Date(dep.departureTime.replace(" ", "T"));
+        const minuteKey = `${depDate.getFullYear()}-${depDate.getMonth()}-${depDate.getDate()}-${depDate.getHours()}-${depDate.getMinutes()}`;
+        const key = `${minuteKey}_${dep.line}`;
+        const existing = deduped.get(key);
+        if (!existing) {
+          deduped.set(key, dep);
+        } else {
+          const existingScore = (existing.source === "realtime" ? 2 : 0) + (existing.platform ? 1 : 0);
+          const newScore = (dep.source === "realtime" ? 2 : 0) + (dep.platform ? 1 : 0);
+          if (newScore > existingScore) {
+            deduped.set(key, dep);
+          }
+        }
+      }
+
       // Sort all departures by time
-      const sortedDepartures = mergedDepartures
-        .filter((d: any) => d.departureTime)
+      const sortedDepartures = Array.from(deduped.values())
         .sort((a: any, b: any) => {
           const timeA = new Date(a.departureTime.replace(" ", "T")).getTime();
           const timeB = new Date(b.departureTime.replace(" ", "T")).getTime();
