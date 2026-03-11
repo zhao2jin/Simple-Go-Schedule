@@ -18,6 +18,7 @@ import { ServiceAlertBanner } from "@/components/ServiceAlertBanner";
 import { useTheme } from "@/hooks/useTheme";
 import { useDonation } from "@/hooks/useDonation";
 import { Spacing } from "@/constants/theme";
+import { getLinesForStation } from "@shared/lines";
 import { getSavedRoutes, getReversedMode, setReversedMode, deleteRoute } from "@/lib/storage";
 import { API_URL } from "@/lib/config";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -138,7 +139,7 @@ export default function MyRoutesScreen() {
         {alertsData?.alerts && alertsData.alerts.length > 0 && (
           <ServiceAlertBanner
             alerts={alertsData.alerts}
-            affectedRouteCodes={routes.flatMap(r => [r.originCode, r.destinationCode])}
+            affectedRouteCodes={[...new Set(routes.flatMap(r => [...getLinesForStation(r.originCode).map(l => l.id), ...getLinesForStation(r.destinationCode).map(l => l.id)]))]}
           />
         )}
         {routes.length === 0 ? (

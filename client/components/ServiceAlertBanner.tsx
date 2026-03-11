@@ -19,15 +19,16 @@ export function ServiceAlertBanner({ alerts, affectedRouteCodes }: ServiceAlertB
     return null;
   }
 
-  // Filter alerts to show only those affecting user's routes if route codes provided
+  const nonInfoAlerts = alerts.filter(alert => alert.severity !== "info");
+
   const filteredAlerts = affectedRouteCodes && affectedRouteCodes.length > 0
-    ? alerts.filter(alert => {
+    ? nonInfoAlerts.filter(alert => {
         if (!alert.affectedRoutes || alert.affectedRoutes.length === 0) {
-          return true; // Show alerts with no specific routes (system-wide)
+          return true;
         }
         return alert.affectedRoutes.some(route => affectedRouteCodes.includes(route));
       })
-    : alerts;
+    : nonInfoAlerts;
 
   if (filteredAlerts.length === 0) {
     return null;
