@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl, Pressable, LayoutAnimation, Platform, UIManager } from "react-native";
+import React from "react";
+import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp } from "@react-navigation/native";
@@ -16,29 +16,11 @@ import type { JourneyResult } from "@shared/types";
 
 type RouteDetailRouteProp = RouteProp<RootStackParamList, "RouteDetail">;
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 export default function RouteDetailScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
   const route = useRoute<RouteDetailRouteProp>();
-  const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
-
-  const toggleAlert = useCallback((alertId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedAlerts((prev) => {
-      const next = new Set(prev);
-      if (next.has(alertId)) {
-        next.delete(alertId);
-      } else {
-        next.add(alertId);
-      }
-      return next;
-    });
-  }, []);
 
   const { origin, destination } = route.params;
 
@@ -111,34 +93,16 @@ export default function RouteDetailScreen() {
               Service Alerts
             </ThemedText>
           </View>
-          {alerts.map((alert, i) => {
-            const alertId = alert.id || String(i);
-            const isExpanded = expandedAlerts.has(alertId);
-            return (
-              <Pressable
-                key={alertId}
-                onPress={() => toggleAlert(alertId)}
-                style={styles.alertItem}
-              >
-                <View style={styles.alertItemHeader}>
-                  <ThemedText type="body" style={[styles.alertTitle, { flex: 1 }]}>
-                    {alert.title}
-                  </ThemedText>
-                  <Feather
-                    name={isExpanded ? "chevron-up" : "chevron-down"}
-                    size={16}
-                    color={theme.textSecondary}
-                    style={{ marginLeft: Spacing.sm }}
-                  />
-                </View>
-                {isExpanded && alert.description ? (
-                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm, lineHeight: 20 }}>
-                    {alert.description}
-                  </ThemedText>
-                ) : null}
-              </Pressable>
-            );
-          })}
+          {alerts.map((alert, i) => (
+            <View key={alert.id || i} style={styles.alertItem}>
+              <ThemedText type="body" style={{ fontWeight: "600" }}>
+                {alert.title}
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.xs }}>
+                {alert.description}
+              </ThemedText>
+            </View>
+          ))}
         </View>
       ) : null}
 
@@ -210,15 +174,6 @@ const styles = StyleSheet.create({
   },
   alertItem: {
     marginTop: Spacing.sm,
-    paddingVertical: Spacing.sm,
-  },
-  alertItemHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  alertTitle: {
-    fontWeight: "600",
   },
   departuresSection: {
     flex: 1,
