@@ -25,6 +25,13 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import type { SavedRoute, JourneyResult, ServiceAlert } from "@shared/types";
 
+function getLineCodesForRoute(originCode: string, destCode: string): string[] {
+  const originLines = getLinesForStation(originCode).map(l => l.id);
+  const destLines = getLinesForStation(destCode).map(l => l.id);
+  const shared = originLines.filter(id => destLines.includes(id));
+  return shared.length > 0 ? shared : originLines;
+}
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function MyRoutesScreen() {
@@ -139,7 +146,7 @@ export default function MyRoutesScreen() {
         {alertsData?.alerts && alertsData.alerts.length > 0 && (
           <ServiceAlertBanner
             alerts={alertsData.alerts}
-            affectedRouteCodes={[...new Set(routes.flatMap(r => [...getLinesForStation(r.originCode).map(l => l.id), ...getLinesForStation(r.destinationCode).map(l => l.id)]))]}
+            affectedRouteCodes={[...new Set(routes.flatMap(r => getLineCodesForRoute(r.originCode, r.destinationCode)))]}
           />
         )}
         {routes.length === 0 ? (
