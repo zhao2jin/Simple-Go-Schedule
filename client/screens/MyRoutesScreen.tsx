@@ -261,7 +261,7 @@ function RouteCardWithData({
       route={route}
       departures={data?.departures || []}
       isReversed={isReversed}
-      hasAlert={data?.alerts && data.alerts.length > 0}
+      hasAlert={data?.alerts?.some(a => a.severity === "warning" || a.severity === "severe") ?? false}
       onLongPress={handleLongPress}
       index={index}
       isLoading={isLoading}
