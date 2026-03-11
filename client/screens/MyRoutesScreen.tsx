@@ -29,7 +29,7 @@ function getLineCodesForRoute(originCode: string, destCode: string): string[] {
   const originLines = getLinesForStation(originCode).map(l => l.id);
   const destLines = getLinesForStation(destCode).map(l => l.id);
   const shared = originLines.filter(id => destLines.includes(id));
-  return shared.length > 0 ? shared : originLines;
+  return shared.length > 0 ? shared : [...new Set([...originLines, ...destLines])];
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
