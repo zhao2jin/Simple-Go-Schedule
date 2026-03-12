@@ -127,11 +127,6 @@ export default function ProfileScreen() {
           ]}
         >
           <View style={styles.aboutRow}>
-            <ThemedText>Version</ThemedText>
-            <ThemedText style={{ color: theme.textSecondary }}>1.0.0</ThemedText>
-          </View>
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-          <View style={styles.aboutRow}>
             <ThemedText>Data Source</ThemedText>
             <ThemedText style={{ color: theme.textSecondary }}>Metrolinx Open API</ThemedText>
           </View>
