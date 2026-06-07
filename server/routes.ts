@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "node:http";
-import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 
 const METROLINX_BASE_URL = "https://api.openmetrolinx.com/OpenDataAPI";
 
@@ -488,98 +487,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching alerts:", error.message);
       res.json({ alerts: [] });
-    }
-  });
-
-  app.get("/api/stripe/publishable-key", async (req, res) => {
-    try {
-      const publishableKey = await getStripePublishableKey();
-      res.json({ publishableKey });
-    } catch (error: any) {
-      console.error("Error getting Stripe publishable key:", error.message);
-      res.status(500).json({ error: "Stripe not configured" });
-    }
-  });
-
-  app.get("/api/donation/prices", async (req, res) => {
-    try {
-      const stripe = await getUncachableStripeClient();
-      const products = await stripe.products.search({
-        query: "metadata['app']:'go-tracker' AND metadata['type']:'donation'"
-      });
-
-      if (products.data.length === 0) {
-        return res.json({ prices: [] });
-      }
-
-      const productId = products.data[0].id;
-      const prices = await stripe.prices.list({
-        product: productId,
-        active: true,
-      });
-
-      const sortedPrices = prices.data
-        .sort((a, b) => (a.unit_amount || 0) - (b.unit_amount || 0))
-        .map(price => ({
-          id: price.id,
-          amount: price.unit_amount || 0,
-          currency: price.currency,
-          tier: price.metadata?.tier || 'donation'
-        }));
-
-      res.json({ prices: sortedPrices });
-    } catch (error: any) {
-      console.error("Error fetching donation prices:", error.message);
-      res.status(500).json({ error: "Failed to fetch prices" });
-    }
-  });
-
-  app.post("/api/donation/checkout", async (req, res) => {
-    try {
-      const { priceId, customAmount } = req.body;
-      
-      if (!priceId && !customAmount) {
-        return res.status(400).json({ error: "Price ID or custom amount required" });
-      }
-
-      const stripe = await getUncachableStripeClient();
-      
-      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      const protocol = domain.includes('localhost') ? 'http' : 'https';
-      const baseUrl = `${protocol}://${domain}`;
-
-      let lineItems;
-      
-      if (customAmount && typeof customAmount === 'number' && customAmount >= 100) {
-        lineItems = [{
-          price_data: {
-            currency: 'cad',
-            product_data: {
-              name: 'Support Simple Go Schedule',
-              description: 'Custom donation - Thank you for your support!',
-            },
-            unit_amount: customAmount,
-          },
-          quantity: 1,
-        }];
-      } else if (priceId) {
-        lineItems = [{ price: priceId, quantity: 1 }];
-      } else {
-        return res.status(400).json({ error: "Invalid amount" });
-      }
-
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: `${baseUrl}/donation/success`,
-        cancel_url: `${baseUrl}/donation/cancel`,
-      });
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error("Error creating checkout session:", error.message);
-      res.status(500).json({ error: "Failed to create checkout session" });
     }
   });
 

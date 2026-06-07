@@ -12,11 +12,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ReverseButton } from "@/components/ReverseButton";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
-import { DonationModal } from "@/components/DonationModal";
-import { CelebrationAnimation } from "@/components/CelebrationAnimation";
 import { ServiceAlertBanner } from "@/components/ServiceAlertBanner";
 import { useTheme } from "@/hooks/useTheme";
-import { useDonation } from "@/hooks/useDonation";
 import { Spacing } from "@/constants/theme";
 import { getLinesForStation } from "@shared/lines";
 import { getSavedRoutes, getReversedMode, setReversedMode, deleteRoute } from "@/lib/storage";
@@ -40,13 +37,10 @@ export default function MyRoutesScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
-  const { showModal, trackUsage, checkAndShowPrompt, handleDonated, handleDismiss } = useDonation();
-
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [isReversed, setIsReversed] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [showCelebration, setShowCelebration] = useState(false);
 
   // Fetch service alerts
   const { data: alertsData } = useQuery<{ alerts: ServiceAlert[] }>({
@@ -78,8 +72,7 @@ export default function MyRoutesScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRoutes();
-      checkAndShowPrompt();
-    }, [loadRoutes, checkAndShowPrompt])
+    }, [loadRoutes])
   );
 
   const handleRefresh = async () => {
@@ -182,19 +175,6 @@ export default function MyRoutesScreen() {
         />
       ) : null}
 
-      <DonationModal
-        visible={showModal}
-        onClose={handleDismiss}
-        onDonated={() => {
-          handleDonated();
-          setShowCelebration(true);
-        }}
-      />
-
-      <CelebrationAnimation
-        visible={showCelebration}
-        onComplete={() => setShowCelebration(false)}
-      />
     </View>
   );
 }
