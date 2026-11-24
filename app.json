@@ -2,7 +2,7 @@
   "expo": {
     "name": "Simple Go Schedule",
     "slug": "mygotrainschedule",
-    "version": "1.1.2",
+    "version": "1.1.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mygotrainschedule",
@@ -11,10 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mygotrainschedule.app",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsArbitraryLoads": false
         }
       }
     },
@@ -54,11 +54,7 @@
       "reactCompiler": false
     },
     "extra": {
-      "eas": {
-        "projectId": ""
-      },
       "apiUrl": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
-    },
-    "owner": ""
+    }
   }
 }

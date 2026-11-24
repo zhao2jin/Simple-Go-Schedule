@@ -1,5 +1,8 @@
 import Constants from "expo-constants";
 
+const PRODUCTION_API_URL =
+  "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app";
+
 function normalizeUrl(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, "");
   if (/^https?:\/\//i.test(trimmed)) {
@@ -24,17 +27,17 @@ export function getApiUrl(): string {
   }
 
   const configUrl = Constants.expoConfig?.extra?.apiUrl;
-  if (configUrl) {
+  if (typeof configUrl === "string" && configUrl.length > 0) {
     return normalizeUrl(configUrl);
   }
 
-  if (__DEV__) {
-    return "http://localhost:5000";
-  }
-
-  throw new Error(
-    "API URL is not configured. Set EXPO_PUBLIC_API_URL or expo.extra.apiUrl.",
-  );
+  return PRODUCTION_API_URL;
 }
 
 export const API_URL = getApiUrl();
+
+export function buildApiUrl(path: string): string {
+  const base = API_URL.replace(/\/+$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${cleanPath}`;
+}

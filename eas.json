@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -16,24 +17,25 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
+        "EXPO_PUBLIC_API_URL": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app",
+        "EXPO_PUBLIC_DOMAIN": "simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
       }
     },
     "production": {
+      "distribution": "store",
       "ios": {
         "resourceClass": "m-medium"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
+        "EXPO_PUBLIC_API_URL": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app",
+        "EXPO_PUBLIC_DOMAIN": "simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "ascAppId": "6758809962"
       }
     }
   }

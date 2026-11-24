@@ -95,7 +95,7 @@ export function ServiceAlertBanner({ alerts, affectedRouteCodes }: ServiceAlertB
                 <View style={[styles.iconContainer, { backgroundColor: severityColor }]}>
                   <Feather name={icon as any} size={16} color="#FFFFFF" />
                 </View>
-                <ThemedText type="caption" style={styles.alertTitle} numberOfLines={isExpanded ? undefined : 1}>
+                <ThemedText type="small" style={styles.alertTitle} numberOfLines={isExpanded ? undefined : 1}>
                   {alert.title}
                 </ThemedText>
               </View>
@@ -108,7 +108,7 @@ export function ServiceAlertBanner({ alerts, affectedRouteCodes }: ServiceAlertB
 
             {isExpanded && (
               <View style={styles.alertBody}>
-                <ThemedText type="caption" style={styles.alertDescription}>
+                <ThemedText type="small" style={styles.alertDescription}>
                   {alert.description}
                 </ThemedText>
                 {alert.affectedRoutes && alert.affectedRoutes.length > 0 && (

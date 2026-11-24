@@ -22,7 +22,7 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 COPY package.json ./package.root.json
-RUN node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("package.root.json","utf8")); fs.writeFileSync("package.json", JSON.stringify({name:"simple-go-schedule-api",private:true,dependencies:{express:p.dependencies.express,stripe:p.dependencies.stripe}},null,2));' && \
+RUN node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("package.root.json","utf8")); fs.writeFileSync("package.json", JSON.stringify({name:"simple-go-schedule-api",private:true,dependencies:{express:p.dependencies.express}},null,2));' && \
     rm package.root.json && \
     npm install --omit=dev --no-audit --no-fund
 
