@@ -353,7 +353,7 @@ eas build --profile production --platform ios
 ### App Metadata ([app.json](app.json))
 
 - **Name**: "Simple Go Schedule"
-- **Slug**: `mygotrainschedule`
+- **Slug**: `simple-go-schedule`
 - **Bundle ID (iOS)**: `com.capricatech.simplegoschedule`
 - **Bundle ID (Android)**: `com.capricatech.simplegoschedule`
 - **Orientation**: Portrait only
