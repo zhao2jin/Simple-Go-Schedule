@@ -19,10 +19,9 @@ scripts/
 .env.*
 !.env.example
 
-# VCS, Replit & IDE files
+# VCS & IDE files
 .git/
 .gitignore
-.replit
 .claude/
 .DS_Store
 *.md

@@ -29,10 +29,9 @@ Simple Go Schedule is a React Native mobile application (iOS/Android) built with
 - **Stripe API** - Payment processing
 
 ### Build & Deployment
-- **TypeScript 5.9.2** - Full type safety
+- **TypeScript 6.x** - Full type safety
 - **EAS Build** - Expo build service
-- **Replit** - Development environment
-- **Cloud Run** - Production deployment
+- **Google Cloud Run** - Production API deployment (Docker)
 
 ## Architecture Overview
 
@@ -312,9 +311,8 @@ npm run format            # Prettier formatting
 ### Building for Production
 
 ```bash
-npm run expo:static:build    # Bundles Expo app
 npm run server:build         # Bundles Express server with esbuild
-npm run server:prod          # Runs bundled server on port 5000
+npm run server:prod          # Runs bundled server
 ```
 
 ### Database Migrations
@@ -326,20 +324,13 @@ npm run db:studio            # Open Drizzle Studio GUI
 
 ## Deployment
 
-### Replit Configuration ([.replit](.replit))
+### Google Cloud Run Deployment ([Dockerfile](Dockerfile))
 
-- **Stack**: EXPO (React Native)
-- **Runtime**: Node.js 22
-- **Port**: 5000 (backend), 8081 (Expo bundler)
-- **Environment**: Stripe integration via Replit connector
-
-### Cloud Run Deployment
-
-- Auto-deploys on push to Replit
-- Build: `npm run expo:static:build && npm run server:build`
-- Run: `npm run server:prod`
-- Port: 5000
-- Environment variables injected from Replit
+- **Service**: `simple-go-schedule-api` (`northamerica-northeast2`)
+- **Runtime**: Node.js 22 (multi-stage Docker build, API only)
+- **Port**: `8080` (via `PORT` env var)
+- **Secrets**: `METROLINX_API_KEY` from Google Cloud Secret Manager
+- **Deploy**: `gcloud run deploy simple-go-schedule-api --project=simple-go-schedule --source=. --region=northamerica-northeast2 --allow-unauthenticated --set-secrets="METROLINX_API_KEY=metrolinx-api-key:latest"`
 
 ### EAS Build ([eas.json](eas.json))
 
@@ -373,9 +364,8 @@ eas build --profile production --platform ios
 
 ### Required Variables
 
-- `METROLINX_API_KEY` - API key for Metrolinx OpenData API
-- `DATABASE_URL` - PostgreSQL connection string
-- `STRIPE_SECRET_KEY` - Stripe API secret key (auto-configured via Replit connector)
+- `METROLINX_API_KEY` - API key for Metrolinx OpenData API (stored in GCP Secret Manager)
+- `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` - Optional Stripe keys (donations disabled when unset)
 
 ### Development vs Production
 

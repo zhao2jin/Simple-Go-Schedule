@@ -2,7 +2,6 @@
 .gcloudignore
 .git/
 .gitignore
-.replit
 .claude/
 .DS_Store
 
