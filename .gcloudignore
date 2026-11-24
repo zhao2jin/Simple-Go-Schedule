@@ -1,0 +1,26 @@
+# Exclude non-server files from `gcloud run deploy --source .` uploads
+.gcloudignore
+.git/
+.gitignore
+.replit
+.claude/
+.DS_Store
+
+node_modules/
+server_dist/
+static-build/
+dist/
+web-build/
+.expo/
+
+my-first-app/
+client/
+assets/
+attached_assets/
+scripts/
+*.pdf
+*.md
+
+.env
+.env.*
+!.env.example

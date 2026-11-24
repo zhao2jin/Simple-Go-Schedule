@@ -1,43 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getApiUrl } from "./config";
 
-const PRODUCTION_API_URL = "https://transit-watch--7pt4dmysby.replit.app";
-
-function resolveApiBase(): string {
-  try {
-    const host = process.env.EXPO_PUBLIC_DOMAIN;
-    if (host && typeof host === "string" && host.length > 0) {
-      const cleanHost = host.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-      return "https://" + cleanHost;
-    }
-  } catch {}
-
-  try {
-    const Constants = require("expo-constants").default;
-    const extra = Constants?.expoConfig?.extra
-      || Constants?.manifest?.extra
-      || Constants?.manifest2?.extra;
-    if (extra && extra.apiUrl && typeof extra.apiUrl === "string") {
-      return extra.apiUrl.replace(/\/+$/, "");
-    }
-  } catch {}
-
-  return PRODUCTION_API_URL;
-}
-
-let _cachedApiUrl: string | null = null;
-
-export function getApiUrl(): string {
-  if (!_cachedApiUrl) {
-    _cachedApiUrl = resolveApiBase();
-  }
-  return _cachedApiUrl;
-}
-
-function buildUrl(base: string, path: string): string {
-  const cleanBase = base.replace(/\/+$/, "");
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
+export { getApiUrl };
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {

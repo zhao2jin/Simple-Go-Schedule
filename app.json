@@ -45,7 +45,10 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
       "reactCompiler": false
@@ -54,7 +57,7 @@
       "eas": {
         "projectId": ""
       },
-      "apiUrl": "https://transit-watch--7pt4dmysby.replit.app"
+      "apiUrl": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
     },
     "owner": ""
   }

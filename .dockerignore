@@ -1,0 +1,28 @@
+# Dependencies & build artifacts
+node_modules/
+server_dist/
+static-build/
+dist/
+web-build/
+.expo/
+
+# Unrelated subprojects & large non-server files
+my-first-app/
+client/
+assets/
+attached_assets/
+scripts/
+*.pdf
+
+# Local environment & secrets
+.env
+.env.*
+!.env.example
+
+# VCS, Replit & IDE files
+.git/
+.gitignore
+.replit
+.claude/
+.DS_Store
+*.md

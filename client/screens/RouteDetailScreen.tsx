@@ -59,7 +59,9 @@ export default function RouteDetailScreen() {
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
-          onRefresh={refetch}
+          onRefresh={() => {
+            refetch();
+          }}
           tintColor={theme.text}
         />
       }

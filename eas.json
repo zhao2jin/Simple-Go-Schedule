@@ -16,7 +16,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "transit-watch--7pt4dmysby.replit.app"
+        "EXPO_PUBLIC_API_URL": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
       }
     },
     "production": {
@@ -24,7 +24,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "transit-watch--7pt4dmysby.replit.app"
+        "EXPO_PUBLIC_API_URL": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
       }
     }
   },

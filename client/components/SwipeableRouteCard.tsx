@@ -117,7 +117,6 @@ export function SwipeableRouteCard({
             departures={departures}
             isReversed={isReversed}
             hasAlert={hasAlert}
-            onPress={onPress}
             index={index}
             isLoading={isLoading}
           />
