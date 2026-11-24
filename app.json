@@ -10,12 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mygotrainschedule.app",
+      "bundleIdentifier": "com.capricatech.simplegoschedule",
       "buildNumber": "5",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -25,7 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.mygotrainschedule.app"
+      "package": "com.capricatech.simplegoschedule"
     },
     "web": {
       "output": "single",
@@ -54,7 +55,10 @@
       "reactCompiler": false
     },
     "extra": {
-      "apiUrl": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app"
+      "apiUrl": "https://simple-go-schedule-api-759545657799.northamerica-northeast2.run.app",
+      "eas": {
+        "projectId": "641563f8-e01b-4599-b332-4b8b74442a55"
+      }
     }
   }
 }

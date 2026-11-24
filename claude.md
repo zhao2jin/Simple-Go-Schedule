@@ -354,8 +354,8 @@ eas build --profile production --platform ios
 
 - **Name**: "Simple Go Schedule"
 - **Slug**: `mygotrainschedule`
-- **Bundle ID (iOS)**: `com.mygotrainschedule.app`
-- **Bundle ID (Android)**: `com.mygotrainschedule.app`
+- **Bundle ID (iOS)**: `com.capricatech.simplegoschedule`
+- **Bundle ID (Android)**: `com.capricatech.simplegoschedule`
 - **Orientation**: Portrait only
 - **New Architecture**: Enabled (React Native new architecture)
 - **React Compiler**: Enabled (experimental)
